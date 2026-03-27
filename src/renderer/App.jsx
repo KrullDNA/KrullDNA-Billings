@@ -3,6 +3,7 @@ import Sidebar from './components/shared/Sidebar';
 import Toolbar from './components/shared/Toolbar';
 import ClientView from './components/clients/ClientView';
 import ClientForm from './components/clients/ClientForm';
+import SettingsPanel from './components/settings/SettingsPanel';
 
 export default function App() {
   const [clientGroups, setClientGroups] = useState([]);
@@ -93,6 +94,8 @@ export default function App() {
         <main className="flex-1 overflow-hidden">
           {view === 'client' && selectedClient ? (
             <ClientView client={selectedClient} />
+          ) : view === 'settings' ? (
+            <SettingsPanel />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">

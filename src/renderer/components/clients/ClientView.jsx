@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ProjectForm from '../projects/ProjectForm';
+import LineItemForm from '../lineitems/LineItemForm';
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
 
@@ -14,15 +15,21 @@ function formatDuration(totalSeconds) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-export default function ClientView({ client, onNewProject }) {
+export default function ClientView({ client }) {
   const [activeTab, setActiveTab] = useState('projects');
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [lineItems, setLineItems] = useState([]);
   const [lineItemFilter, setLineItemFilter] = useState('working');
   const [summary, setSummary] = useState({ overdue: 0, totalBilled: 0, totalPaid: 0, balance: 0 });
+
+  // Project form
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+
+  // Line item form
+  const [lineItemFormOpen, setLineItemFormOpen] = useState(false);
+  const [editingLineItem, setEditingLineItem] = useState(null);
 
   const loadProjects = useCallback(async () => {
     if (!client?.id) return;
@@ -52,11 +59,7 @@ export default function ClientView({ client, onNewProject }) {
     setActiveTab('projects');
   }, [client?.id]);
 
-  useEffect(() => {
-    loadLineItems();
-  }, [selectedProject?.id, lineItemFilter]);
-
-  async function loadLineItems() {
+  const loadLineItems = useCallback(async () => {
     if (!selectedProject?.id) { setLineItems([]); return; }
     try {
       const items = lineItemFilter === 'estimate'
@@ -66,11 +69,31 @@ export default function ClientView({ client, onNewProject }) {
     } catch (err) {
       console.error('Failed to load line items:', err);
     }
-  }
+  }, [selectedProject?.id, lineItemFilter]);
+
+  useEffect(() => {
+    loadLineItems();
+  }, [loadLineItems]);
 
   function handleProjectSaved() {
     loadProjects();
     setEditingProject(null);
+  }
+
+  function handleLineItemSaved() {
+    loadLineItems();
+    loadProjects(); // Refresh totals
+    loadSummary();
+  }
+
+  function handleNewLineItem() {
+    setEditingLineItem(null);
+    setLineItemFormOpen(true);
+  }
+
+  function handleEditLineItem(item) {
+    setEditingLineItem(item);
+    setLineItemFormOpen(true);
   }
 
   const currency = client?.currency || 'AUD';
@@ -114,6 +137,8 @@ export default function ClientView({ client, onNewProject }) {
             onSetLineItemFilter={setLineItemFilter}
             onNewProject={() => { setEditingProject(null); setProjectFormOpen(true); }}
             onEditProject={(p) => { setEditingProject(p); setProjectFormOpen(true); }}
+            onNewLineItem={handleNewLineItem}
+            onEditLineItem={handleEditLineItem}
             currency={currency}
           />
         )}
@@ -144,17 +169,26 @@ export default function ClientView({ client, onNewProject }) {
         clientId={client.id}
         onSaved={handleProjectSaved}
       />
+
+      {/* Line Item Form */}
+      <LineItemForm
+        open={lineItemFormOpen}
+        onClose={() => setLineItemFormOpen(false)}
+        lineItem={editingLineItem}
+        projectId={selectedProject?.id}
+        currency={currency}
+        onSaved={handleLineItemSaved}
+      />
     </div>
   );
 }
 
-function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, currency }) {
+function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, currency }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Top Area: Project List */}
       <div className="flex-shrink-0 border-b border-gray-200" style={{ maxHeight: '40%' }}>
         <div className="overflow-auto h-full">
-          {/* Header */}
           <div className="sticky top-0 bg-gray-50 grid grid-cols-[1fr_100px_80px_100px_100px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
             <span>Project</span>
             <span className="text-right">Due Date</span>
@@ -163,7 +197,6 @@ function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineI
             <span className="text-right">Total</span>
           </div>
 
-          {/* Rows */}
           {projects.length === 0 ? (
             <div className="px-6 py-8 text-center text-sm text-gray-400">
               No projects yet. Click "New Project" to create one.
@@ -229,7 +262,10 @@ function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineI
               </div>
 
               <div className="flex items-center gap-1">
-                <button className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-md" disabled>
+                <button
+                  onClick={onNewLineItem}
+                  className="px-3 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-md font-medium"
+                >
                   New Line Item
                 </button>
                 <button className="px-3 py-1 text-xs text-gray-300 rounded-md cursor-not-allowed" disabled title="Coming in a future session">
@@ -243,55 +279,28 @@ function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineI
 
             {/* Line Items Table */}
             <div className="flex-1 overflow-auto">
-              <div className="sticky top-0 bg-gray-50 grid grid-cols-[60px_1fr_90px_60px_80px_80px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+              <div className="sticky top-0 bg-gray-50 grid grid-cols-[60px_1fr_90px_60px_80px_80px_28px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
                 <span>Kind</span>
                 <span>Name</span>
-                <span className="text-right">Date</span>
+                <span className="text-right">Date Due</span>
                 <span className="text-right">Qty</span>
                 <span className="text-right">Rate</span>
                 <span className="text-right">Total</span>
+                <span />
               </div>
 
               {lineItems.length === 0 ? (
                 <div className="px-6 py-6 text-center text-sm text-gray-400">
-                  {lineItemFilter === 'estimate' ? 'No unbilled line items.' : 'No line items yet.'}
+                  {lineItemFilter === 'estimate' ? 'No unbilled line items.' : 'No line items yet. Click "New Line Item" to add one.'}
                 </div>
               ) : (
                 lineItems.map((item) => (
-                  <div
+                  <LineItemRow
                     key={item.id}
-                    className="grid grid-cols-[60px_1fr_90px_60px_80px_80px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center"
-                  >
-                    <span>
-                      <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${
-                        item.kind === 'hourly' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {item.kind === 'hourly' ? 'Hourly' : 'Fixed'}
-                      </span>
-                    </span>
-                    <span className="flex items-center gap-2 truncate">
-                      {/* Status dot */}
-                      {item.status === 'invoiced' ? (
-                        <span className="flex-shrink-0 w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-gray-300" />
-                      )}
-                      <span className="truncate">{item.name}</span>
-                      {item.status === 'invoiced' && (
-                        <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">DONE</span>
-                      )}
-                    </span>
-                    <span className="text-right text-gray-500 text-xs">
-                      {item.date ? new Date(item.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '\u2014'}
-                    </span>
-                    <span className="text-right tabular-nums text-gray-600">{item.quantity}</span>
-                    <span className="text-right tabular-nums text-gray-600">{formatCurrency(item.rate, currency)}</span>
-                    <span className="text-right tabular-nums font-medium">{formatCurrency(item.total, currency)}</span>
-                  </div>
+                    item={item}
+                    currency={currency}
+                    onClick={() => onEditLineItem(item)}
+                  />
                 ))
               )}
             </div>
@@ -303,6 +312,95 @@ function ProjectsTab({ client, projects, selectedProject, onSelectProject, lineI
         )}
       </div>
     </div>
+  );
+}
+
+function LineItemRow({ item, currency, onClick }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      <div
+        className="grid grid-cols-[60px_1fr_90px_60px_80px_80px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer"
+        onClick={onClick}
+      >
+        {/* Kind badge */}
+        <span>
+          <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${
+            item.kind === 'hourly'
+              ? 'bg-blue-100 text-blue-700'
+              : item.kind === 'mileage'
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-gray-100 text-gray-600'
+          }`}>
+            {item.kind === 'hourly' ? 'Hourly' : item.kind === 'mileage' ? 'Mileage' : 'Fixed'}
+          </span>
+        </span>
+
+        {/* Name + status */}
+        <span className="flex items-center gap-2 truncate">
+          {item.status === 'invoiced' ? (
+            <span className="flex-shrink-0 w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+          ) : (
+            <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-gray-300" />
+          )}
+          <span className="truncate">{item.name}</span>
+          {item.status === 'invoiced' && (
+            <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded flex-shrink-0">DONE</span>
+          )}
+        </span>
+
+        {/* Date Due */}
+        <span className="text-right text-gray-500 text-xs">
+          {item.date ? new Date(item.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '\u2014'}
+        </span>
+
+        {/* Quantity */}
+        <span className="text-right tabular-nums text-gray-600">{item.quantity}</span>
+
+        {/* Rate */}
+        <span className="text-right tabular-nums text-gray-600">{formatCurrency(item.rate, currency)}</span>
+
+        {/* Total */}
+        <span className="text-right tabular-nums font-medium">{formatCurrency(item.total, currency)}</span>
+
+        {/* Expand arrow */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs text-gray-500 grid grid-cols-2 gap-2">
+          {item.category_name && (
+            <div><span className="font-medium text-gray-600">Category:</span> {item.category_name}</div>
+          )}
+          <div><span className="font-medium text-gray-600">Billable:</span> {item.billable ? 'Yes' : 'No'}</div>
+          {item.markup_pct > 0 && (
+            <div><span className="font-medium text-gray-600">Markup:</span> {item.markup_pct}% ({formatCurrency(item.markup_amount, currency)})</div>
+          )}
+          {item.discount_pct > 0 && (
+            <div><span className="font-medium text-gray-600">Discount:</span> {item.discount_pct}% ({formatCurrency(item.discount_amount, currency)})</div>
+          )}
+          {item.tax_name && (
+            <div><span className="font-medium text-gray-600">Tax:</span> {item.tax_name} ({formatCurrency(item.tax_amount, currency)})</div>
+          )}
+          {item.notes && (
+            <div className="col-span-2"><span className="font-medium text-gray-600">Notes:</span> {item.notes}</div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
