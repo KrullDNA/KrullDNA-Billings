@@ -194,8 +194,8 @@ function renderBlockToHtml(block, data) {
   switch (type) {
     case 'header_block': return nowrap(headerHtml(props, data));
     case 'client_block': return wrap(clientHtml(props, data));
-    case 'doc_title_block': return wrap(docTitleHtml(props, data));
-    case 'line_items_block': return wrap(lineItemsHtml(props, data));
+    case 'doc_title_block': return nowrap(docTitleHtml(props, data));
+    case 'line_items_block': return nowrap(lineItemsHtml(props, data));
     case 'totals_block': return nowrap(totalsHtml(props, data));
     case 'notes_block': return wrap(notesHtml(props, data));
     case 'divider_block': return wrap(dividerHtml(props));
