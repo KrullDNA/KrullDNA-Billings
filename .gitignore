@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-renderer/
+*.db
+*.db-journal
+.env
+.DS_Store
+Thumbs.db
+build/*.p12
+build/*.pfx

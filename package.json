@@ -1,0 +1,55 @@
+{
+  "name": "krull-da-billings",
+  "version": "1.0.0",
+  "description": "Krull D+A Billings — Custom Desktop Invoicing Application",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev:renderer": "vite",
+    "dev": "vite & sleep 2 && electron .",
+    "start": "vite build && electron .",
+    "build": "vite build",
+    "dist": "vite build && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "Krull D+A",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "electron-store": "^10.0.0",
+    "nodemailer": "^6.9.16",
+    "puppeteer-core": "^24.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.7"
+  },
+  "build": {
+    "appId": "com.krulldna.billings",
+    "productName": "Krull D+A Billings",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "preload.js",
+      "package.json"
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    }
+  }
+}
