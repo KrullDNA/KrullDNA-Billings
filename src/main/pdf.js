@@ -82,9 +82,24 @@ async function generate(docType, docId) {
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
 
-  const clientName = (client.is_company ? client.company : `${client.first_name}${client.last_name}`).replace(/[^a-zA-Z0-9]/g, '');
-  const docNumber = (isInvoice ? doc.invoice_number : doc.estimate_number).replace(/[^a-zA-Z0-9-]/g, '');
-  const filename = `${clientName}_${docNumber}.pdf`;
+  const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
+  const projectName = doc.project_name || '';
+  const docNumber = isInvoice ? doc.invoice_number : doc.estimate_number;
+
+  // Build filename from pattern in settings
+  const defaultPattern = isInvoice
+    ? '%clientName% %projectName% Invoice %invNum%'
+    : '%clientName% %projectName% Estimate %estNum%';
+  const pattern = (isInvoice ? settings.invoice_filename_pattern : settings.estimate_filename_pattern) || defaultPattern;
+
+  const filename = pattern
+    .replace('%clientName%', clientName)
+    .replace('%projectName%', projectName)
+    .replace('%invNum%', docNumber || '')
+    .replace('%estNum%', docNumber || '')
+    .replace(/[/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() + '.pdf';
 
   const tmpDir = path.join(os.tmpdir(), 'krull-billings-pdfs');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
