@@ -78,8 +78,8 @@ function HeaderBlock({ props, data, style }) {
 function LabelRow({ label, value }) {
   return (
     <tr>
-      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 0, letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1.6 }}>{label}:</td>
-      <td style={{ fontSize: 11, paddingBottom: 0, lineHeight: 1.6 }}>{value}</td>
+      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 0, letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1.3 }}>{label}:</td>
+      <td style={{ fontSize: 11, paddingBottom: 0, lineHeight: 1.3 }}>{value}</td>
     </tr>
   );
 }
@@ -305,13 +305,22 @@ function FooterBlock({ props, data, style }) {
       {/* Estimate: signature lines + disclosure */}
       {isEstimate && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, marginTop: 20, fontSize: 10 }}>
-            <div>CLIENT SIGNATURE: <span style={{ display: 'inline-block', width: 150, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
-            <div>PRINT: <span style={{ display: 'inline-block', width: 180, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
-            <div>DATE: <span style={{ display: 'inline-block', width: 120, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 12, marginTop: 16, fontSize: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ marginBottom: 4 }}>CLIENT SIGNATURE:</div>
+              <div style={{ borderBottom: '1px solid #111', height: 20 }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ marginBottom: 4 }}>PRINT:</div>
+              <div style={{ borderBottom: '1px solid #111', height: 20 }} />
+            </div>
+            <div style={{ flex: 0.7 }}>
+              <div style={{ marginBottom: 4 }}>DATE:</div>
+              <div style={{ borderBottom: '1px solid #111', height: 20 }} />
+            </div>
           </div>
           {settings.estimate_disclosure && (
-            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.5, marginBottom: 16 }}>
+            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.4, marginBottom: 12 }}>
               {settings.estimate_disclosure}
             </div>
           )}

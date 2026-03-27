@@ -108,25 +108,48 @@ export default function Builder({ blocks, onChange, data, onSaveTemplate, onLoad
 
         {/* Centre: A4 Canvas */}
         <div className="flex-1 overflow-auto p-6 flex justify-center">
-          <div className="w-[595px] min-h-[842px] bg-white shadow-lg border border-gray-200 p-8" style={{ fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
-            <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-              {blocks.map((block) => (
-                <SortableBlock
-                  key={block.id}
-                  block={block}
-                  data={data}
-                  isSelected={selectedId === block.id}
-                  onSelect={() => setSelectedId(block.id)}
-                  onDelete={() => handleDelete(block.id)}
-                />
-              ))}
-            </SortableContext>
+          <div className="w-[595px] min-h-[842px] bg-white shadow-lg border border-gray-200 flex flex-col" style={{ fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
+            {/* Main content area */}
+            <div className="flex-1 p-8">
+              <SortableContext items={blocks.filter((b) => b.type !== 'footer_block').map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                {blocks.filter((b) => b.type !== 'footer_block').map((block) => (
+                  <SortableBlock
+                    key={block.id}
+                    block={block}
+                    data={data}
+                    isSelected={selectedId === block.id}
+                    onSelect={() => setSelectedId(block.id)}
+                    onDelete={() => handleDelete(block.id)}
+                  />
+                ))}
+              </SortableContext>
 
-            {blocks.length === 0 && (
-              <div className="flex items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded text-sm text-gray-400">
-                Drag blocks from the library to start building
-              </div>
-            )}
+              {blocks.filter((b) => b.type !== 'footer_block').length === 0 && (
+                <div className="flex items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded text-sm text-gray-400">
+                  Drag blocks from the library to start building
+                </div>
+              )}
+            </div>
+
+            {/* Footer zone — always at bottom of page */}
+            <div className="border-t-2 border-dashed border-gray-200 p-8 bg-gray-50/50">
+              {blocks.filter((b) => b.type === 'footer_block').length > 0 ? (
+                blocks.filter((b) => b.type === 'footer_block').map((block) => (
+                  <SortableBlock
+                    key={block.id}
+                    block={block}
+                    data={data}
+                    isSelected={selectedId === block.id}
+                    onSelect={() => setSelectedId(block.id)}
+                    onDelete={() => handleDelete(block.id)}
+                  />
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-16 border-2 border-dashed border-gray-300 rounded text-xs text-gray-400">
+                  Footer zone — drag a Footer block here (always bottom of PDF)
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -223,11 +246,23 @@ function SortableBlock({ block, data, isSelected, onSelect, onDelete }) {
 // ── Standalone document renderer (non-interactive, for previews) ──
 
 export function DocumentRenderer({ blocks, data }) {
+  const mainBlocks = blocks.filter((b) => b.type !== 'footer_block');
+  const footerBlocks = blocks.filter((b) => b.type === 'footer_block');
+
   return (
-    <div className="bg-white p-8" style={{ width: 595, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
-      {blocks.map((block) => (
-        <div key={block.id}>{renderBlock(block, data)}</div>
-      ))}
+    <div className="bg-white flex flex-col" style={{ width: 595, minHeight: 842, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
+      <div className="flex-1 p-8">
+        {mainBlocks.map((block) => (
+          <div key={block.id}>{renderBlock(block, data)}</div>
+        ))}
+      </div>
+      {footerBlocks.length > 0 && (
+        <div className="p-8 pt-0">
+          {footerBlocks.map((block) => (
+            <div key={block.id}>{renderBlock(block, data)}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

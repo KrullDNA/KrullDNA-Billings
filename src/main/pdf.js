@@ -230,7 +230,7 @@ function headerHtml(props, data) {
 }
 
 function labelRow(label, value) {
-  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:8px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.6;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.6;">${value}</td></tr>`;
+  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:8px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.3;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.3;">${value}</td></tr>`;
 }
 
 function clientHtml(props, data) {
@@ -380,13 +380,13 @@ function footerHtml(props, data) {
 
   // Estimate: signature lines + disclosure
   if (isEstimate) {
-    html += `<div style="display:flex;justify-content:space-between;margin:20px 0;font-size:10px;">`;
-    html += `<div>CLIENT SIGNATURE: <span style="display:inline-block;width:150px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
-    html += `<div>PRINT: <span style="display:inline-block;width:180px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
-    html += `<div>DATE: <span style="display:inline-block;width:120px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
+    html += `<div style="display:flex;gap:16px;margin:16px 0 12px;font-size:10px;">`;
+    html += `<div style="flex:1;"><div style="margin-bottom:4px;">CLIENT SIGNATURE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
+    html += `<div style="flex:1;"><div style="margin-bottom:4px;">PRINT:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
+    html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:8px;color:#374151;line-height:1.5;margin-bottom:16px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:8px;color:#374151;line-height:1.4;margin-bottom:12px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 
