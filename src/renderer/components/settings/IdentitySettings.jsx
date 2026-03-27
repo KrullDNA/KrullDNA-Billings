@@ -109,6 +109,19 @@ export default function IdentitySettings() {
         </div>
       </div>
 
+      {/* Estimate Disclosure */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Estimate Disclosure</label>
+        <textarea
+          value={settings.estimate_disclosure || ''}
+          onChange={(e) => update('estimate_disclosure', e.target.value)}
+          rows={4}
+          placeholder="This is a cost estimate and subject to 10% variation. Acceptance of this estimate indicates acceptance of the costs..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none"
+        />
+        <p className="text-[10px] text-gray-400 mt-1">Shown at the bottom of estimate PDFs, above the business footer.</p>
+      </div>
+
       <div className="pt-4 border-t border-gray-100 flex justify-end">
         <button onClick={save} className="px-4 py-2 text-sm text-white bg-brand-600 hover:bg-brand-700 rounded-md">{saved ? 'Saved!' : 'Save'}</button>
       </div>

@@ -203,7 +203,7 @@ function TotalsBlock({ props, data, style }) {
           )}
           <tr style={{ backgroundColor: '#111', color: '#fff' }}>
             <td style={{ textAlign: 'right', padding: '6px 12px', fontWeight: 700, fontSize: 11 }}>TOTAL</td>
-            <td style={{ textAlign: 'right', padding: '6px 0', fontWeight: 700, fontSize: 11, width: 100, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
+            <td style={{ textAlign: 'right', padding: '6px 12px 6px 0', fontWeight: 700, fontSize: 11, width: 110, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
           </tr>
         </tbody>
       </table>
@@ -215,7 +215,7 @@ function TotalsRow({ label, value }) {
   return (
     <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
       <td style={{ textAlign: 'right', padding: '5px 12px', color: '#374151', fontSize: 11 }}>{label}</td>
-      <td style={{ textAlign: 'right', padding: '5px 0', fontSize: 11, width: 100, fontVariantNumeric: 'tabular-nums' }}>{value}</td>
+      <td style={{ textAlign: 'right', padding: '5px 12px 5px 0', fontSize: 11, width: 110, fontVariantNumeric: 'tabular-nums' }}>{value}</td>
     </tr>
   );
 }
@@ -298,31 +298,50 @@ function TextBlock({ props, data, style }) {
 function FooterBlock({ props, data, style }) {
   const settings = data?.settings || {};
   const doc = data?.document || {};
+  const isEstimate = data?.docType === 'estimate';
 
   return (
     <div style={{ ...style, fontSize: 10 }}>
-      {/* Terms */}
-      {(doc.terms || props.defaultTerms) && (
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ fontWeight: 700, letterSpacing: '0.02em' }}>TERMS: </span>
-          <span>{doc.terms || props.defaultTerms}</span>
-        </div>
+      {/* Estimate: signature lines + disclosure */}
+      {isEstimate && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, marginTop: 20, fontSize: 10 }}>
+            <div>CLIENT SIGNATURE: <span style={{ display: 'inline-block', width: 150, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
+            <div>PRINT: <span style={{ display: 'inline-block', width: 180, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
+            <div>DATE: <span style={{ display: 'inline-block', width: 120, borderBottom: '1px solid #111' }}>&nbsp;</span></div>
+          </div>
+          {settings.estimate_disclosure && (
+            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.5, marginBottom: 16 }}>
+              {settings.estimate_disclosure}
+            </div>
+          )}
+        </>
       )}
-      {/* Banking Details */}
-      {settings.bank_name && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, marginBottom: 2, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
-          <table style={{ fontSize: 10, borderCollapse: 'collapse' }}>
-            <tbody>
-              {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
-              {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
-              {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
-              {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
-            </tbody>
-          </table>
-        </div>
+      {/* Invoice: terms + banking */}
+      {!isEstimate && (
+        <>
+          {(doc.terms || props.defaultTerms) && (
+            <div style={{ marginBottom: 12 }}>
+              <span style={{ fontWeight: 700, letterSpacing: '0.02em' }}>TERMS: </span>
+              <span>{doc.terms || props.defaultTerms}</span>
+            </div>
+          )}
+          {settings.bank_name && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 2, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
+              <table style={{ fontSize: 10, borderCollapse: 'collapse' }}>
+                <tbody>
+                  {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
+                  {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
+                  {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
+                  {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
-      {/* Business info footer */}
+      {/* Business info footer — always shown */}
       {settings.business_name && (
         <div style={{ fontSize: 9 }}>
           <div style={{ fontWeight: 700 }}>
