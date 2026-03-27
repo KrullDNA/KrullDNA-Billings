@@ -460,10 +460,15 @@ function setDefaultTax(id) {
 // ── Invoices ──
 
 function getInvoices(clientId) {
-  if (clientId) {
-    return db.prepare('SELECT * FROM invoices WHERE client_id = ? ORDER BY created_at DESC').all(clientId);
-  }
-  return db.prepare('SELECT * FROM invoices ORDER BY created_at DESC').all();
+  const query = `
+    SELECT i.*, COALESCE(SUM(p.amount), 0) as paid_amount
+    FROM invoices i
+    LEFT JOIN payments p ON p.invoice_id = i.id
+    ${clientId ? 'WHERE i.client_id = ?' : ''}
+    GROUP BY i.id
+    ORDER BY i.created_at DESC
+  `;
+  return clientId ? db.prepare(query).all(clientId) : db.prepare(query).all();
 }
 
 function getInvoice(id) {
