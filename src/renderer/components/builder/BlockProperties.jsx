@@ -101,6 +101,12 @@ export default function BlockProperties({ block, onChange }) {
         <NumField label="Height (px)" value={props.height} onChange={(v) => update('height', v)} />
       )}
 
+      {type === 'footer_block' && (
+        <>
+          <TextField label="Default Terms" value={props.defaultTerms} onChange={(v) => update('defaultTerms', v)} />
+        </>
+      )}
+
       {type === 'text_block' && (
         <>
           <div>

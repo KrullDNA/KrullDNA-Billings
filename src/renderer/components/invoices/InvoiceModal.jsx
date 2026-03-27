@@ -344,6 +344,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
                   invoice_date: invoiceDate,
                   due_date: dueDate,
                   terms,
+                  project_name: project?.name,
                   subtotal,
                   markup_total: markupTotal,
                   discount_total: discountTotal,

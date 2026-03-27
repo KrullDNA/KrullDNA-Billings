@@ -236,6 +236,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
                 client,
                 document: {
                   estimate_number: estimateNumber,
+                  project_name: project?.name,
                   estimate_date: estimateDate,
                   expiry_date: expiryDate,
                   subtotal,

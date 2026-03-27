@@ -52,6 +52,12 @@ async function generate(docType, docId) {
 
   const isPaid = isInvoice && doc.status === 'paid';
 
+  // Add project name to document data
+  if (doc.project_id) {
+    const project = db.getProject(doc.project_id);
+    if (project) doc.project_name = project.name;
+  }
+
   const data = { settings, client, document: doc, lineItems, docType, currency, isPaid };
 
   const html = renderToHtml(blocks, data);
@@ -159,6 +165,7 @@ function renderBlockToHtml(block, data) {
     case 'divider_block': return wrap(dividerHtml(props));
     case 'spacer_block': return `<div style="height:${props.height || 24}px;"></div>`;
     case 'text_block': return wrap(textHtml(props, data));
+    case 'footer_block': return wrap(footerHtml(props, data));
     default: return '';
   }
 }
@@ -199,7 +206,7 @@ function headerHtml(props, data) {
 }
 
 function labelRow(label, value) {
-  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:8px;padding-bottom:2px;letter-spacing:0.05em;white-space:nowrap;">${label}:</td><td style="font-size:11px;padding-bottom:2px;">${value}</td></tr>`;
+  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:8px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.6;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.6;">${value}</td></tr>`;
 }
 
 function clientHtml(props, data) {
@@ -219,7 +226,7 @@ function clientHtml(props, data) {
 
 function docTitleHtml(props, data) {
   const title = props.titleLabel || 'DESCRIPTION';
-  return `<div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:4px;">
+  return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 10px;">
     <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">${esc(title)}</span>
     <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">AMOUNT</span>
   </div>`;
@@ -280,8 +287,7 @@ function totalsHtml(props, data) {
   if (props.showTax && (doc.tax_total || 0) > 0) rows += totalsRowHtml('GST 10%', fmt(doc.tax_total, currency));
   if (props.showRetainer && (doc.retainer_applied || 0) > 0) rows += totalsRowHtml('RETAINER', `-${fmt(doc.retainer_applied, currency)}`);
 
-  const bg = props.highlightTotal ? 'background:#f3f4f6;' : '';
-  rows += `<tr style="${bg}"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 0;font-weight:700;font-size:11px;width:100px;">${fmt(doc.total, currency)}</td></tr>`;
+  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 0;font-weight:700;font-size:11px;width:100px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
   return rows;
 }
@@ -340,6 +346,44 @@ function textHtml(props, data) {
   }
 
   return `<div style="font-size:${props.fontSize || 10}px;color:${props.color || '#374151'};text-align:${props.alignment || 'left'};font-weight:${props.bold ? 'bold' : 'normal'};">${esc(props.content || '')}</div>`;
+}
+
+function footerHtml(props, data) {
+  const s = (data && data.settings) || {};
+  const doc = (data && data.document) || {};
+  let html = '';
+
+  // Terms
+  const terms = doc.terms || props.defaultTerms;
+  if (terms) html += `<div style="margin-bottom:12px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
+
+  // Banking Details
+  if (s.bank_name) {
+    html += `<div style="margin-bottom:16px;font-size:10px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+    html += `<table style="font-size:10px;border-collapse:collapse;">`;
+    if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
+    if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
+    if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
+    if (s.bank_account) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">ACCOUNT:</td><td>${esc(s.bank_account)}</td></tr>`;
+    html += `</table></div>`;
+  }
+
+  // Business footer
+  if (s.business_name) {
+    let line1 = `<strong>${esc(s.business_name)}</strong>`;
+    if (s.abn) line1 += ` &bull; <strong>ABN</strong>: ${esc(s.abn)}`;
+    html += `<div style="font-size:9px;">${line1}`;
+    const addrParts = [s.address_street, [s.address_city, s.address_state, s.address_postcode].filter(Boolean).join(', '), s.address_country].filter(Boolean);
+    if (addrParts.length) html += `<br>${esc(addrParts.join(', '))}`;
+    const contactParts = [];
+    if (s.phone) contactParts.push(`<strong>T:</strong> ${esc(s.phone)}`);
+    if (s.email) contactParts.push(`<strong>E:</strong> ${esc(s.email)}`);
+    if (s.website) contactParts.push(`<strong>W:</strong> ${esc(s.website)}`);
+    if (contactParts.length) html += `<br>${contactParts.join('&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;')}`;
+    html += `</div>`;
+  }
+
+  return html;
 }
 
 module.exports = { generate, renderToHtml };
