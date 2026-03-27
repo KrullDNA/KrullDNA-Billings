@@ -280,8 +280,7 @@ function seedDefaults() {
       { id: 'b3', type: 'line_items_block', props: { fontSize: 11, paddingTop: 0, paddingBottom: 0 } },
       { id: 'b4', type: 'spacer_block', props: { height: 60, paddingTop: 0, paddingBottom: 0 } },
       { id: 'b5', type: 'totals_block', props: { alignment: 'right', showSubtotal: true, showMarkup: true, showDiscount: true, showTax: true, showRetainer: true, highlightTotal: true, paddingTop: 0, paddingBottom: 16 } },
-      { id: 'b6', type: 'notes_block', props: { sectionLabel: 'NOTES', fontSize: 10, showIfEmpty: false, paddingTop: 8, paddingBottom: 16 } },
-      { id: 'b7', type: 'text_block', props: { content: '', fontSize: 9, bold: false, color: '#374151', alignment: 'left', paddingTop: 8, paddingBottom: 0 } },
+      { id: 'b6', type: 'footer_block', props: { defaultTerms: 'COD', paddingTop: 16, paddingBottom: 0 } },
     ]);
 
     const defaultEstimateBlocks = JSON.stringify([
@@ -290,7 +289,7 @@ function seedDefaults() {
       { id: 'b3', type: 'line_items_block', props: { fontSize: 11, paddingTop: 0, paddingBottom: 0 } },
       { id: 'b4', type: 'spacer_block', props: { height: 60, paddingTop: 0, paddingBottom: 0 } },
       { id: 'b5', type: 'totals_block', props: { alignment: 'right', showSubtotal: true, showMarkup: false, showDiscount: false, showTax: true, showRetainer: false, highlightTotal: true, paddingTop: 0, paddingBottom: 16 } },
-      { id: 'b6', type: 'notes_block', props: { sectionLabel: 'TERMS & CONDITIONS', fontSize: 10, showIfEmpty: false, paddingTop: 8, paddingBottom: 16 } },
+      { id: 'b6', type: 'footer_block', props: { defaultTerms: '30 Days', paddingTop: 16, paddingBottom: 0 } },
     ]);
 
     db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Invoice 7 Days', 'invoice', defaultInvoiceBlocks, 1);

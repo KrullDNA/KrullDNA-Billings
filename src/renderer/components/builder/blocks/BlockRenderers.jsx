@@ -29,6 +29,7 @@ export function renderBlock(block, data) {
     case 'divider_block': return <DividerBlock props={props} style={style} />;
     case 'spacer_block': return <SpacerBlock props={props} />;
     case 'text_block': return <TextBlock props={props} data={data} style={style} />;
+    case 'footer_block': return <FooterBlock props={props} data={data} style={style} />;
     default: return <div style={style} className="text-xs text-red-400">Unknown block: {type}</div>;
   }
 }
@@ -77,8 +78,8 @@ function HeaderBlock({ props, data, style }) {
 function LabelRow({ label, value }) {
   return (
     <tr>
-      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 2, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{label}:</td>
-      <td style={{ fontSize: 11, paddingBottom: 2 }}>{value}</td>
+      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 0, letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1.6 }}>{label}:</td>
+      <td style={{ fontSize: 11, paddingBottom: 0, lineHeight: 1.6 }}>{value}</td>
     </tr>
   );
 }
@@ -88,7 +89,7 @@ function LabelRow({ label, value }) {
 function DocTitleBlock({ props, data, style }) {
   return (
     <div style={{ ...style }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #111', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#111', color: '#fff', padding: '6px 10px' }}>
         <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {props.titleLabel || 'DESCRIPTION'}
         </span>
@@ -200,7 +201,7 @@ function TotalsBlock({ props, data, style }) {
           {props.showRetainer && (doc.retainer_applied || 0) > 0 && (
             <TotalsRow label="RETAINER" value={`-${fmt(doc.retainer_applied, currency)}`} />
           )}
-          <tr style={{ backgroundColor: props.highlightTotal ? '#f3f4f6' : 'transparent' }}>
+          <tr style={{ backgroundColor: '#111', color: '#fff' }}>
             <td style={{ textAlign: 'right', padding: '6px 12px', fontWeight: 700, fontSize: 11 }}>TOTAL</td>
             <td style={{ textAlign: 'right', padding: '6px 0', fontWeight: 700, fontSize: 11, width: 100, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
           </tr>
@@ -290,6 +291,56 @@ function TextBlock({ props, data, style }) {
   return (
     <div style={{ ...style, fontSize: props.fontSize || 10, color: props.color || '#374151', textAlign: props.alignment || 'left', fontWeight: props.bold ? 'bold' : 'normal' }}>
       {props.content || ''}
+    </div>
+  );
+}
+
+function FooterBlock({ props, data, style }) {
+  const settings = data?.settings || {};
+  const doc = data?.document || {};
+
+  return (
+    <div style={{ ...style, fontSize: 10 }}>
+      {/* Terms */}
+      {(doc.terms || props.defaultTerms) && (
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ fontWeight: 700, letterSpacing: '0.02em' }}>TERMS: </span>
+          <span>{doc.terms || props.defaultTerms}</span>
+        </div>
+      )}
+      {/* Banking Details */}
+      {settings.bank_name && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, marginBottom: 2, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
+          <table style={{ fontSize: 10, borderCollapse: 'collapse' }}>
+            <tbody>
+              {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
+              {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
+              {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
+              {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {/* Business info footer */}
+      {settings.business_name && (
+        <div style={{ fontSize: 9 }}>
+          <div style={{ fontWeight: 700 }}>
+            {settings.business_name}{settings.abn ? ` \u2022 ABN: ${settings.abn}` : ''}
+          </div>
+          {(() => {
+            const addrParts = [settings.address_street, [settings.address_city, settings.address_state, settings.address_postcode].filter(Boolean).join(', '), settings.address_country].filter(Boolean);
+            return addrParts.length ? <div>{addrParts.join(', ')}</div> : null;
+          })()}
+          <div>
+            {[
+              settings.phone ? `T: ${settings.phone}` : null,
+              settings.email ? `E: ${settings.email}` : null,
+              settings.website ? `W: ${settings.website}` : null,
+            ].filter(Boolean).join('    \u2022    ')}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

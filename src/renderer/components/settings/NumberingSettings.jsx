@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const FILENAME_PLACEHOLDERS = ['%clientName%', '%projectName%', '%invNum%', '%estNum%'];
+
 export default function NumberingSettings() {
   const [settings, setSettings] = useState({});
   const [saved, setSaved] = useState(false);
@@ -22,6 +24,8 @@ export default function NumberingSettings() {
         invoice_next_number: settings.invoice_next_number || '1001',
         estimate_prefix: settings.estimate_prefix || '',
         estimate_next_number: settings.estimate_next_number || '1001',
+        invoice_filename_pattern: settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%',
+        estimate_filename_pattern: settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%',
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -38,6 +42,11 @@ export default function NumberingSettings() {
 
   const invoicePreview = `${settings.invoice_prefix || ''}${settings.invoice_next_number || '1001'}`;
   const estimatePreview = `${settings.estimate_prefix || ''}${settings.estimate_next_number || '1001'}`;
+
+  const invFilenamePreview = (settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%')
+    .replace('%clientName%', 'AcmeCo').replace('%projectName%', 'Website').replace('%invNum%', invoicePreview);
+  const estFilenamePreview = (settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%')
+    .replace('%clientName%', 'AcmeCo').replace('%projectName%', 'Website').replace('%estNum%', estimatePreview);
 
   return (
     <div className="max-w-lg space-y-6">
@@ -78,6 +87,24 @@ export default function NumberingSettings() {
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Preview: <span className="font-mono text-gray-700">{estimatePreview}</span></span>
           <button onClick={resetEstimateNumber} className="text-[10px] text-red-500 hover:text-red-600">Reset to 1001</button>
+        </div>
+      </fieldset>
+
+      {/* PDF Filename Patterns */}
+      <fieldset className="border border-gray-200 rounded-md p-4 space-y-3">
+        <legend className="text-xs font-semibold text-gray-500 px-1 uppercase">PDF Filenames</legend>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Filename</label>
+          <input value={settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%'} onChange={(e) => update('invoice_filename_pattern', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          <p className="text-[10px] text-gray-400 mt-1">Preview: <span className="font-mono text-gray-600">{invFilenamePreview}.pdf</span></p>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Estimate Filename</label>
+          <input value={settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%'} onChange={(e) => update('estimate_filename_pattern', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          <p className="text-[10px] text-gray-400 mt-1">Preview: <span className="font-mono text-gray-600">{estFilenamePreview}.pdf</span></p>
+        </div>
+        <div className="bg-gray-50 rounded p-2">
+          <p className="text-[10px] text-gray-500">Placeholders: {FILENAME_PLACEHOLDERS.map((p) => <code key={p} className="bg-gray-200 px-1 py-0.5 rounded mx-0.5">{p}</code>)}</p>
         </div>
       </fieldset>
 

@@ -212,8 +212,8 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
             </div>
 
             <div className="flex-1 overflow-auto">
-              <div className="sticky top-0 bg-gray-50 grid grid-cols-[60px_1fr_90px_60px_80px_80px_80px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                <span>Kind</span><span>Name</span><span className="text-right">Date Due</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Total</span><span />
+              <div className="sticky top-0 bg-gray-50 grid grid-cols-[60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                <span>Kind</span><span>Name</span><span className="text-right">Date Due</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Total</span><span /><span />
               </div>
               {displayItems.length === 0 ? (
                 <div className="px-6 py-6 text-center text-sm text-gray-400">{lineItemFilter === 'estimate' ? 'No estimate line items.' : 'No line items yet.'}</div>
@@ -241,7 +241,7 @@ function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking
   const [expanded, setExpanded] = useState(false);
   return (
     <>
-      <div className="grid grid-cols-[60px_1fr_90px_60px_80px_80px_80px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick}>
+      <div className="grid grid-cols-[60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick}>
         <span>
           <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${item.kind === 'hourly' ? 'bg-blue-100 text-blue-700' : item.kind === 'mileage' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
             {item.kind === 'hourly' ? 'Hourly' : item.kind === 'mileage' ? 'Mileage' : 'Fixed'}
@@ -260,14 +260,14 @@ function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking
         <span className="text-right tabular-nums text-gray-600">{item.quantity}</span>
         <span className="text-right tabular-nums text-gray-600">{formatCurrency(item.rate, currency)}</span>
         <span className="text-right tabular-nums font-medium">{formatCurrency(item.total, currency)}</span>
-        <span className="flex items-center justify-end gap-1">
+        <span className="flex items-center justify-center">
           {showStartWorking && (
             <button onClick={(e) => { e.stopPropagation(); onStartWorking?.(); }} className="px-2 py-0.5 text-[10px] text-brand-600 bg-brand-50 hover:bg-brand-100 rounded font-medium whitespace-nowrap">Start Working</button>
           )}
-          <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="text-gray-400 hover:text-gray-600">
-            <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-          </button>
         </span>
+        <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="text-gray-400 hover:text-gray-600">
+          <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
       {expanded && (
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs text-gray-500 grid grid-cols-2 gap-2">

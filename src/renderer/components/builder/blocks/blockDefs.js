@@ -10,6 +10,7 @@ export const BLOCK_TYPES = [
   { type: 'divider_block', label: 'Divider', icon: '—', desc: 'Horizontal rule' },
   { type: 'spacer_block', label: 'Spacer', icon: '↕', desc: 'Vertical whitespace' },
   { type: 'text_block', label: 'Text', icon: 'A', desc: 'Custom text' },
+  { type: 'footer_block', label: 'Footer', icon: 'F', desc: 'Banking + business info' },
 ];
 
 export function getDefaultProps(type) {
@@ -23,6 +24,7 @@ export function getDefaultProps(type) {
     divider_block: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 8 },
     spacer_block: { height: 24, paddingTop: 0, paddingBottom: 0 },
     text_block: { content: 'Custom text here', fontSize: 12, bold: false, color: '#374151', alignment: 'left', paddingTop: 0, paddingBottom: 8 },
+    footer_block: { defaultTerms: 'COD', paddingTop: 16, paddingBottom: 0 },
   };
   return { ...defaults[type] };
 }
