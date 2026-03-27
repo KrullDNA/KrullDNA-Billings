@@ -57,14 +57,18 @@ function HeaderBlock({ props, data, style }) {
         </table>
       </div>
 
-      {/* Right: logo */}
+      {/* Right: logo — pulls from settings.logo_path */}
       {props.showLogo && (
+        settings.logo_path ? (
+          <img src={`file://${settings.logo_path}`} style={{ width: 80, height: 80, objectFit: 'contain', flexShrink: 0 }} alt="Logo" />
+        ) : (
         <div style={{ width: 80, height: 80, backgroundColor: '#1a1a1a', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, textAlign: 'center', flexShrink: 0, letterSpacing: '0.15em' }}>
           <div>
             <div style={{ fontWeight: 300, fontSize: 11, letterSpacing: '0.25em' }}>K R U L L</div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>D+A</div>
           </div>
         </div>
+        )
       )}
     </div>
   );
