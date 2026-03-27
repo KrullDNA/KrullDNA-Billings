@@ -170,7 +170,7 @@ function renderToHtml(blocks, data) {
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 0; }
-  .page-header { padding: 20px 30px 4px 30px; }
+  .page-header { padding: 20px 30px 0 30px; }
   .page-content { flex: 0 0 auto; padding: 0 30px; }
   .page-bottom { margin-top: auto; padding: 0 30px 20px 30px; }
 </style>
@@ -189,18 +189,19 @@ function renderBlockToHtml(block, data) {
   const pt = props.paddingTop || 0;
   const pb = props.paddingBottom || 0;
   const wrap = (inner) => `<div style="padding-top:${pt}px;padding-bottom:${pb}px;">${inner}</div>`;
+  const nowrap = (inner) => inner; // no extra padding for layout-controlled blocks
 
   switch (type) {
-    case 'header_block': return wrap(headerHtml(props, data));
+    case 'header_block': return nowrap(headerHtml(props, data));
     case 'client_block': return wrap(clientHtml(props, data));
     case 'doc_title_block': return wrap(docTitleHtml(props, data));
     case 'line_items_block': return wrap(lineItemsHtml(props, data));
-    case 'totals_block': return wrap(totalsHtml(props, data));
+    case 'totals_block': return nowrap(totalsHtml(props, data));
     case 'notes_block': return wrap(notesHtml(props, data));
     case 'divider_block': return wrap(dividerHtml(props));
     case 'spacer_block': return `<div style="height:${props.height || 24}px;"></div>`;
     case 'text_block': return wrap(textHtml(props, data));
-    case 'footer_block': return wrap(footerHtml(props, data));
+    case 'footer_block': return nowrap(footerHtml(props, data));
     default: return '';
   }
 }
