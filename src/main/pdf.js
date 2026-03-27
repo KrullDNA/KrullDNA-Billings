@@ -396,7 +396,7 @@ function footerHtml(props, data) {
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:7px;color:#000;line-height:1.3;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:7px;color:#000;line-height:1.2;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 

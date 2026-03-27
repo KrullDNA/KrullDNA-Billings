@@ -319,7 +319,7 @@ function FooterBlock({ props, data, style }) {
             </div>
           </div>
           {settings.estimate_disclosure && (
-            <div style={{ fontSize: 7, color: '#000', lineHeight: 1.3, marginBottom: 6 }}>
+            <div style={{ fontSize: 7, color: '#000', lineHeight: 1.2, marginBottom: 6 }}>
               {settings.estimate_disclosure}
             </div>
           )}
