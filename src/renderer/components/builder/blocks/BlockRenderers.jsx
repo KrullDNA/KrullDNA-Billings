@@ -17,7 +17,7 @@ const FONT = "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'He
 
 export function renderBlock(block, data) {
   const { type, props } = block;
-  const style = { paddingTop: props.paddingTop || 0, paddingBottom: props.paddingBottom || 0, fontFamily: FONT };
+  const style = { paddingTop: props.paddingTop || 0, paddingBottom: props.paddingBottom || 0, fontFamily: FONT, color: '#000' };
 
   switch (type) {
     case 'header_block': return <HeaderBlock props={props} data={data} style={style} />;
@@ -78,8 +78,8 @@ function HeaderBlock({ props, data, style }) {
 function LabelRow({ label, value }) {
   return (
     <tr>
-      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 0, letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1.3 }}>{label}:</td>
-      <td style={{ fontSize: 11, paddingBottom: 0, lineHeight: 1.3 }}>{value}</td>
+      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 6, paddingBottom: 0, letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1.15 }}>{label}:</td>
+      <td style={{ fontSize: 11, paddingBottom: 0, lineHeight: 1.15 }}>{value}</td>
     </tr>
   );
 }
@@ -108,15 +108,15 @@ function ClientBlock({ props, data, style }) {
   const contactName = [client.first_name, client.last_name].filter(Boolean).join(' ');
   return (
     <div style={{ ...style, fontSize: props.fontSize || 11 }}>
-      <p style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 3 }}>{props.sectionLabel || 'BILL TO'}</p>
+      <p style={{ fontSize: 9, fontWeight: 700, color: '#333', textTransform: 'uppercase', marginBottom: 3 }}>{props.sectionLabel || 'BILL TO'}</p>
       {client.company && <p style={{ fontWeight: 500 }}>{client.company}</p>}
-      {contactName && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{contactName}</p>}
-      {client.address_street && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.address_street}</p>}
+      {contactName && <p style={{ color: '#000', fontSize: (props.fontSize || 11) - 1 }}>{contactName}</p>}
+      {client.address_street && <p style={{ color: '#000', fontSize: (props.fontSize || 11) - 1 }}>{client.address_street}</p>}
       {(client.address_city || client.address_state) && (
-        <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>
+        <p style={{ color: '#000', fontSize: (props.fontSize || 11) - 1 }}>{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>
       )}
-      {props.showEmail && client.email && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.email}</p>}
-      {props.showPhone && client.phone && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.phone}</p>}
+      {props.showEmail && client.email && <p style={{ color: '#000', fontSize: (props.fontSize || 11) - 1 }}>{client.email}</p>}
+      {props.showPhone && client.phone && <p style={{ color: '#000', fontSize: (props.fontSize || 11) - 1 }}>{client.phone}</p>}
     </div>
   );
 }
@@ -156,9 +156,9 @@ function LineItemsBlock({ props, data, style }) {
               {item._cat && item._isFirstInCat && (
                 <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 1, letterSpacing: '0.02em' }}>{item._cat}</div>
               )}
-              <div style={{ fontSize: 11, color: '#374151' }}>{item.name}</div>
+              <div style={{ fontSize: 11, color: '#000' }}>{item.name}</div>
               {item.notes && (
-                <div style={{ fontSize: 9, color: '#6b7280', marginTop: 3, lineHeight: 1.4 }}>{item.notes}</div>
+                <div style={{ fontSize: 9, color: '#333', marginTop: 3, lineHeight: 1.4 }}>{item.notes}</div>
               )}
             </div>
             <div style={{ fontSize: 11, textAlign: 'right', width: 110, paddingRight: 12, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
@@ -213,7 +213,7 @@ function TotalsBlock({ props, data, style }) {
 function TotalsRow({ label, value }) {
   return (
     <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-      <td style={{ textAlign: 'right', padding: '5px 12px', color: '#374151', fontSize: 11 }}>{label}</td>
+      <td style={{ textAlign: 'right', padding: '5px 12px', color: '#000', fontSize: 11 }}>{label}</td>
       <td style={{ textAlign: 'right', padding: '5px 12px 5px 0', fontSize: 11, width: 110, fontVariantNumeric: 'tabular-nums' }}>{value}</td>
     </tr>
   );
@@ -251,7 +251,7 @@ function NotesBlock({ props, data, style }) {
         </div>
       )}
       {/* Custom notes */}
-      {notes && <div style={{ color: '#4b5563', whiteSpace: 'pre-wrap' }}>{notes}</div>}
+      {notes && <div style={{ color: '#000', whiteSpace: 'pre-wrap' }}>{notes}</div>}
     </div>
   );
 }
@@ -279,7 +279,7 @@ function TextBlock({ props, data, style }) {
     if (contactParts.length) parts.push(contactParts.join('    \u2022    '));
 
     return (
-      <div style={{ ...style, fontSize: props.fontSize || 9, color: '#374151' }}>
+      <div style={{ ...style, fontSize: props.fontSize || 9, color: '#000' }}>
         {parts.map((line, i) => (
           <div key={i} style={{ fontWeight: i === 0 ? 700 : 400 }}>{line}</div>
         ))}
@@ -319,7 +319,7 @@ function FooterBlock({ props, data, style }) {
             </div>
           </div>
           {settings.estimate_disclosure && (
-            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.3, marginBottom: 8 }}>
+            <div style={{ fontSize: 8, color: '#000', lineHeight: 1.3, marginBottom: 8 }}>
               {settings.estimate_disclosure}
             </div>
           )}
@@ -335,9 +335,9 @@ function FooterBlock({ props, data, style }) {
             </div>
           )}
           {settings.bank_name && (
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 6 }}>
               <div style={{ fontWeight: 700, marginBottom: 0, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
-              <table style={{ fontSize: 10, borderCollapse: 'collapse', lineHeight: 1.3 }}>
+              <table style={{ fontSize: 10, borderCollapse: 'collapse', lineHeight: 1.15 }}>
                 <tbody>
                   {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
                   {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}

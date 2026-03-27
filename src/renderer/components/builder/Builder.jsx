@@ -258,20 +258,15 @@ export function DocumentRenderer({ blocks, data }) {
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
       </div>
-      {/* Totals — pushed to bottom of content area */}
-      <div className="mt-auto px-8 pb-4">
+      {/* Totals + Footer — pushed to bottom, no gap between them */}
+      <div className="mt-auto px-8 pb-8">
         {totalsBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
+        {footerBlocks.map((block) => (
+          <div key={block.id}>{renderBlock(block, data)}</div>
+        ))}
       </div>
-      {/* Footer — always at bottom */}
-      {footerBlocks.length > 0 && (
-        <div className="px-8 pb-8">
-          {footerBlocks.map((block) => (
-            <div key={block.id}>{renderBlock(block, data)}</div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
