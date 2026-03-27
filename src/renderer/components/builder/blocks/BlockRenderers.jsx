@@ -89,8 +89,8 @@ function LabelRow({ label, value }) {
 function DocTitleBlock({ props, data, style }) {
   return (
     <div style={{ ...style }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#111', color: '#fff', padding: '6px 0' }}>
-        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', paddingLeft: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#111', color: '#fff', padding: '6px 8px' }}>
+        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {props.titleLabel || 'DESCRIPTION'}
         </span>
         <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', width: 110, textAlign: 'right', paddingRight: 12, flexShrink: 0 }}>
@@ -149,17 +149,16 @@ function LineItemsBlock({ props, data, style }) {
         <div key={item.id || i}>
           {/* Light grey divider between items (black for first item in new category group) */}
           {i > 0 && (
-            <hr style={{ border: 'none', borderTop: item._isFirstInCat && item._cat ? '1px solid #111' : '1px solid #e5e7eb', margin: '12px 0' }} />
+            <hr style={{ border: 'none', borderTop: item._isFirstInCat && item._cat ? '1px solid #111' : '1px solid #e5e7eb', margin: '8px 0' }} />
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '4px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '4px 8px' }}>
             <div style={{ flex: 1, paddingRight: 16 }}>
               {item._cat && item._isFirstInCat && (
-                <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 2, letterSpacing: '0.02em' }}>{item._cat}</div>
+                <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 1, letterSpacing: '0.02em' }}>{item._cat}</div>
               )}
               <div style={{ fontSize: 11, color: '#374151' }}>{item.name}</div>
-              {/* Comments/notes under the description */}
               {item.notes && (
-                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>{item.notes}</div>
+                <div style={{ fontSize: 9, color: '#6b7280', marginTop: 3, lineHeight: 1.4 }}>{item.notes}</div>
               )}
             </div>
             <div style={{ fontSize: 11, textAlign: 'right', width: 110, paddingRight: 12, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
@@ -320,7 +319,7 @@ function FooterBlock({ props, data, style }) {
             </div>
           </div>
           {settings.estimate_disclosure && (
-            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.4, marginBottom: 12 }}>
+            <div style={{ fontSize: 8, color: '#374151', lineHeight: 1.3, marginBottom: 8 }}>
               {settings.estimate_disclosure}
             </div>
           )}
@@ -330,20 +329,20 @@ function FooterBlock({ props, data, style }) {
       {!isEstimate && (
         <>
           {(doc.terms || props.defaultTerms) && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 6 }}>
               <span style={{ fontWeight: 700, letterSpacing: '0.02em' }}>TERMS: </span>
               <span>{doc.terms || props.defaultTerms}</span>
             </div>
           )}
           {settings.bank_name && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, marginBottom: 2, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
-              <table style={{ fontSize: 10, borderCollapse: 'collapse' }}>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontWeight: 700, marginBottom: 0, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
+              <table style={{ fontSize: 10, borderCollapse: 'collapse', lineHeight: 1.3 }}>
                 <tbody>
-                  {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
-                  {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
-                  {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
-                  {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
+                  {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
+                  {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
+                  {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
+                  {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
                 </tbody>
               </table>
             </div>
