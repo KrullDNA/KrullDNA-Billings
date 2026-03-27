@@ -105,7 +105,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
   async function handleCreate() {
     if (selectedIds.size === 0) return;
     try {
-      await window.api.createInvoice({
+      const invoiceId = await window.api.createInvoice({
         client_id: client.id,
         project_id: project.id,
         currency,
@@ -116,6 +116,19 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
         notes: comments || null,
         retainer_applied: retainerApplied,
       }, Array.from(selectedIds));
+
+      // Post-creation delivery actions
+      try {
+        const result = await window.api.generatePdf('invoice', invoiceId);
+        if (result?.path) {
+          if (saveCopy) await window.api.savePdfAs(result.path, result.filename);
+          if (sendEmail) await window.api.sendEmail('invoice', invoiceId);
+          if (printInvoice) await window.api.printPdf(result.path);
+          if (openPreview) await window.api.openPdf(result.path);
+        }
+      } catch (pdfErr) {
+        console.warn('PDF/delivery action failed (invoice created successfully):', pdfErr);
+      }
 
       onCreated();
       onClose();

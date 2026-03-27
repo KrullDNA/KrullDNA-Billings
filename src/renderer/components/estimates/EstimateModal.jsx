@@ -81,7 +81,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
   async function handleCreate() {
     if (selectedIds.size === 0) return;
     try {
-      await window.api.createEstimate({
+      const estimateId = await window.api.createEstimate({
         client_id: client.id,
         project_id: project.id,
         currency,
@@ -90,6 +90,18 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
         template_id: selectedTemplateId,
         notes: comments || null,
       }, Array.from(selectedIds));
+
+      // Post-creation delivery actions
+      try {
+        const result = await window.api.generatePdf('estimate', estimateId);
+        if (result?.path) {
+          if (saveCopy) await window.api.savePdfAs(result.path, result.filename);
+          if (sendEmail) await window.api.sendEmail('estimate', estimateId);
+          if (printEstimate) await window.api.printPdf(result.path);
+        }
+      } catch (pdfErr) {
+        console.warn('PDF/delivery action failed (estimate created successfully):', pdfErr);
+      }
 
       onCreated();
       onClose();

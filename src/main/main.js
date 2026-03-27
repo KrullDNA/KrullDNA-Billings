@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 const config = require('./config');
 
@@ -131,7 +132,7 @@ function registerIpcHandlers() {
   ipcMain.handle('deleteTemplate', (_, id) => db.deleteTemplate(id));
   ipcMain.handle('setDefaultTemplate', (_, id, type) => db.setDefaultTemplate(id, type));
 
-  // PDF + Email (stubs for Session 6)
+  // PDF + Email
   ipcMain.handle('generatePdf', async (_, docType, docId) => {
     const pdf = require('./pdf');
     return pdf.generate(docType, docId);
@@ -140,14 +141,27 @@ function registerIpcHandlers() {
     const email = require('./email');
     return email.send(docType, docId, opts);
   });
-  ipcMain.handle('savePdfAs', async () => {
+  ipcMain.handle('savePdfAs', async (_, sourcePath, defaultFilename) => {
     const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: defaultFilename || 'document.pdf',
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
     });
-    return result.filePath || null;
+    if (result.filePath && sourcePath) {
+      fs.copyFileSync(sourcePath, result.filePath);
+      return result.filePath;
+    }
+    return null;
   });
-  ipcMain.handle('printPdf', async () => {
-    // Stub: will be implemented in Session 6
+  ipcMain.handle('printPdf', async (_, pdfPath) => {
+    if (pdfPath) {
+      shell.openPath(pdfPath);
+    }
+    return null;
+  });
+  ipcMain.handle('openPdf', async (_, pdfPath) => {
+    if (pdfPath) {
+      shell.openPath(pdfPath);
+    }
     return null;
   });
 
