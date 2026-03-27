@@ -202,10 +202,11 @@ function headerHtml(props, data) {
 
 function clientHtml(props, data) {
   const c = data.client || {};
-  const name = c.is_company ? c.company : [c.first_name, c.last_name].filter(Boolean).join(' ');
+  const contactName = [c.first_name, c.last_name].filter(Boolean).join(' ');
   const fs2 = props.fontSize || 12;
   let html = `<div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;margin-bottom:4px;">${esc(props.sectionLabel || 'BILL TO')}</div>`;
-  html += `<div style="font-size:${fs2}px;font-weight:500;">${esc(name || 'Client Name')}</div>`;
+  if (c.company) html += `<div style="font-size:${fs2}px;font-weight:500;">${esc(c.company)}</div>`;
+  if (contactName) html += `<div style="font-size:${c.company ? fs2 - 1 : fs2}px;${c.company ? 'color:#4b5563;' : 'font-weight:500;'}">${esc(contactName)}</div>`;
   if (c.address_street) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(c.address_street)}</div>`;
   const cityLine = [c.address_city, c.address_state, c.address_postcode].filter(Boolean).join(', ');
   if (cityLine) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(cityLine)}</div>`;

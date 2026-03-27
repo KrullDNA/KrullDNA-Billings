@@ -53,11 +53,12 @@ function HeaderBlock({ props, data, style }) {
 
 function ClientBlock({ props, data, style }) {
   const client = data.client || {};
-  const name = client.is_company ? client.company : [client.first_name, client.last_name].filter(Boolean).join(' ');
+  const contactName = [client.first_name, client.last_name].filter(Boolean).join(' ');
   return (
     <div style={{ ...style, fontSize: props.fontSize }}>
       <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">{props.sectionLabel || 'BILL TO'}</p>
-      <p className="font-medium">{name || 'Client Name'}</p>
+      {client.company && <p className="font-medium">{client.company}</p>}
+      {contactName && <p className={client.company ? 'text-gray-600' : 'font-medium'} style={{ fontSize: client.company ? props.fontSize - 1 : props.fontSize }}>{contactName}</p>}
       {client.address_street && <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{client.address_street}</p>}
       {(client.address_city || client.address_state) && (
         <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>

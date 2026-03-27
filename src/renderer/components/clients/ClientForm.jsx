@@ -68,13 +68,6 @@ export default function ClientForm({ open, onClose, client, clientGroups, defaul
 
   async function handleSubmit() {
     const data = { ...form };
-    // Clean up
-    if (data.is_company) {
-      data.first_name = '';
-      data.last_name = '';
-    } else {
-      data.company = data.company || '';
-    }
     data.hourly_rate = parseFloat(data.hourly_rate) || 0;
     data.mileage_rate = parseFloat(data.mileage_rate) || 0;
 
@@ -103,7 +96,7 @@ export default function ClientForm({ open, onClose, client, clientGroups, defaul
             Photo
           </div>
           <div className="flex-1">
-            {/* Company toggle */}
+            {/* Company toggle — controls sidebar display name */}
             <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
               <input
                 type="checkbox"
@@ -111,41 +104,40 @@ export default function ClientForm({ open, onClose, client, clientGroups, defaul
                 onChange={(e) => update('is_company', e.target.checked ? 1 : 0)}
                 className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
               />
-              Company
+              Show as company name in sidebar
             </label>
           </div>
         </div>
 
-        {/* Name fields */}
-        {form.is_company === 1 ? (
+        {/* Company Name */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+          <input
+            value={form.company}
+            onChange={(e) => update('company', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+          />
+        </div>
+
+        {/* Contact Name */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">First Name</label>
             <input
-              value={form.company}
-              onChange={(e) => update('company', e.target.value)}
+              value={form.first_name}
+              onChange={(e) => update('first_name', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
             />
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">First Name</label>
-              <input
-                value={form.first_name}
-                onChange={(e) => update('first_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Last Name</label>
-              <input
-                value={form.last_name}
-                onChange={(e) => update('last_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Last Name</label>
+            <input
+              value={form.last_name}
+              onChange={(e) => update('last_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+            />
           </div>
-        )}
+        </div>
 
         {/* Email */}
         <div>
