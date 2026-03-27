@@ -261,6 +261,36 @@ function seedDefaults() {
       insertSetting.run(key, value);
     }
   }
+
+  // Seed default document templates
+  const templateCount = db.prepare('SELECT COUNT(*) as c FROM document_templates').get().c;
+  if (templateCount === 0) {
+    const defaultInvoiceBlocks = JSON.stringify([
+      { id: 'b1', type: 'header_block', props: { showLogo: true, showBusinessName: true, showAbn: true, showContact: true, bgColor: '#ffffff', textColor: '#111827', logoAlign: 'left', paddingTop: 32, paddingBottom: 16 } },
+      { id: 'b2', type: 'divider_block', props: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b3', type: 'doc_title_block', props: { titleLabel: 'TAX INVOICE', showNumber: true, showDate: true, showDueDate: true, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b4', type: 'client_block', props: { sectionLabel: 'BILL TO', showPhone: false, showEmail: true, fontSize: 12, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b5', type: 'divider_block', props: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 8 } },
+      { id: 'b6', type: 'line_items_block', props: { headerBg: '#f9fafb', headerText: '#374151', categoryBg: '#4263eb', categoryText: '#ffffff', showTaxCol: true, alternateRows: true, fontSize: 11, paddingTop: 0, paddingBottom: 8 } },
+      { id: 'b7', type: 'totals_block', props: { alignment: 'right', showSubtotal: true, showMarkup: true, showDiscount: true, showTax: true, showRetainer: true, highlightTotal: true, paddingTop: 8, paddingBottom: 16 } },
+      { id: 'b8', type: 'divider_block', props: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 8, paddingBottom: 8 } },
+      { id: 'b9', type: 'notes_block', props: { sectionLabel: 'NOTES', fontSize: 10, showIfEmpty: false, paddingTop: 0, paddingBottom: 16 } },
+    ]);
+
+    const defaultEstimateBlocks = JSON.stringify([
+      { id: 'b1', type: 'header_block', props: { showLogo: true, showBusinessName: true, showAbn: true, showContact: true, bgColor: '#ffffff', textColor: '#111827', logoAlign: 'left', paddingTop: 32, paddingBottom: 16 } },
+      { id: 'b2', type: 'divider_block', props: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b3', type: 'doc_title_block', props: { titleLabel: 'ESTIMATE', showNumber: true, showDate: true, showDueDate: true, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b4', type: 'client_block', props: { sectionLabel: 'PREPARED FOR', showPhone: false, showEmail: true, fontSize: 12, paddingTop: 0, paddingBottom: 16 } },
+      { id: 'b5', type: 'divider_block', props: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 8 } },
+      { id: 'b6', type: 'line_items_block', props: { headerBg: '#f9fafb', headerText: '#374151', categoryBg: '#4263eb', categoryText: '#ffffff', showTaxCol: false, alternateRows: true, fontSize: 11, paddingTop: 0, paddingBottom: 8 } },
+      { id: 'b7', type: 'totals_block', props: { alignment: 'right', showSubtotal: true, showMarkup: false, showDiscount: false, showTax: true, showRetainer: false, highlightTotal: true, paddingTop: 8, paddingBottom: 16 } },
+      { id: 'b8', type: 'notes_block', props: { sectionLabel: 'TERMS & CONDITIONS', fontSize: 10, showIfEmpty: false, paddingTop: 8, paddingBottom: 16 } },
+    ]);
+
+    db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Invoice 7 Days', 'invoice', defaultInvoiceBlocks, 1);
+    db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Estimate', 'estimate', defaultEstimateBlocks, 1);
+  }
 }
 
 // ── Client Groups ──

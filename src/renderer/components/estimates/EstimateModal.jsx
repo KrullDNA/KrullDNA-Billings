@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DocumentRenderer } from '../builder/Builder';
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
 
@@ -209,47 +210,25 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
           )}
 
           {activeTab === 'preview' && (
-            <div className="bg-white border border-gray-200 rounded shadow-sm p-8 max-w-[595px] mx-auto text-sm">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">{settings.business_name || 'Krull D+A'}</h1>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-lg font-bold text-gray-400 uppercase">Estimate</h2>
-                  <p className="text-sm font-medium">{estimateNumber}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-8 mb-6">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1">Prepared For</p>
-                  <p className="font-medium">{clientName}</p>
-                </div>
-                <div className="text-right text-xs text-gray-500 space-y-1">
-                  <p>Date: <span className="text-gray-800">{estimateDate}</span></p>
-                  <p>Expires: <span className="text-gray-800">{expiryDate}</span></p>
-                </div>
-              </div>
-              <table className="w-full text-xs mb-6">
-                <thead><tr className="border-b border-gray-300"><th className="text-left py-2 font-medium text-gray-500">Description</th><th className="text-right py-2 font-medium text-gray-500 w-16">Qty</th><th className="text-right py-2 font-medium text-gray-500 w-20">Rate</th><th className="text-right py-2 font-medium text-gray-500 w-20">Amount</th></tr></thead>
-                <tbody>
-                  {selectedItems.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="py-1.5 text-gray-700">{item.name}</td>
-                      <td className="py-1.5 text-right tabular-nums text-gray-600">{item.quantity}</td>
-                      <td className="py-1.5 text-right tabular-nums text-gray-600">{formatCurrency(item.rate, currency)}</td>
-                      <td className="py-1.5 text-right tabular-nums font-medium">{formatCurrency(item.total, currency)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="flex justify-end">
-                <div className="w-48 space-y-1 text-xs">
-                  <div className="flex justify-between"><span className="text-gray-500">SUBTOTAL</span><span className="tabular-nums">{formatCurrency(subtotal, currency)}</span></div>
-                  {taxTotal > 0 && <div className="flex justify-between"><span className="text-gray-500">TAX</span><span className="tabular-nums">{formatCurrency(taxTotal, currency)}</span></div>}
-                  <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-300"><span>TOTAL</span><span className="tabular-nums">{formatCurrency(total, currency)}</span></div>
-                </div>
-              </div>
-            </div>
+            <EstimatePreview
+              templateId={selectedTemplateId}
+              data={{
+                settings,
+                client,
+                document: {
+                  estimate_number: estimateNumber,
+                  estimate_date: estimateDate,
+                  expiry_date: expiryDate,
+                  subtotal,
+                  tax_total: taxTotal,
+                  total,
+                  notes: comments,
+                },
+                lineItems: selectedItems,
+                docType: 'estimate',
+                currency,
+              }}
+            />
           )}
         </div>
 
@@ -259,6 +238,39 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
             Create Estimate
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EstimatePreview({ templateId, data }) {
+  const [blocks, setBlocks] = useState([]);
+
+  useEffect(() => {
+    async function load() {
+      if (templateId) {
+        try {
+          const template = await window.api.getTemplate(templateId);
+          if (template) { setBlocks(JSON.parse(template.blocks_json || '[]')); return; }
+        } catch { /* ignore */ }
+      }
+      try {
+        const templates = await window.api.getTemplates('estimate');
+        const def = templates.find((t) => t.is_default) || templates[0];
+        if (def) setBlocks(JSON.parse(def.blocks_json || '[]'));
+      } catch { /* ignore */ }
+    }
+    load();
+  }, [templateId]);
+
+  if (blocks.length === 0) {
+    return <div className="text-center text-sm text-gray-400 py-8">No template blocks to preview.</div>;
+  }
+
+  return (
+    <div className="flex justify-center">
+      <div className="border border-gray-200 rounded shadow-sm">
+        <DocumentRenderer blocks={blocks} data={data} />
       </div>
     </div>
   );

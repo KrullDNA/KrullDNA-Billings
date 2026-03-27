@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CategoriesSettings from './CategoriesSettings';
+import TemplatesSettings from './TemplatesSettings';
 
 export default function SettingsPanel() {
   const [activeTab, setActiveTab] = useState('labels');
@@ -87,7 +88,9 @@ export default function SettingsPanel() {
           </div>
         )}
 
-        {activeTab !== 'labels' && (
+        {activeTab === 'templates' && <TemplatesSettings />}
+
+        {activeTab !== 'labels' && activeTab !== 'templates' && (
           <div className="text-sm text-gray-400">
             {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} settings will be built in Session 7.
           </div>

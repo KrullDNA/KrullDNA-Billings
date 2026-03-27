@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DocumentRenderer } from '../builder/Builder';
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
 const TERMS_OPTIONS = ['7 Days', '14 Days', '21 Days', '30 Days', '60 Days', 'Custom'];
@@ -313,21 +314,28 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
           )}
 
           {activeTab === 'preview' && (
-            <InvoicePreview
-              client={client}
-              invoiceNumber={invoiceNumber}
-              invoiceDate={invoiceDate}
-              dueDate={dueDate}
-              terms={terms}
-              selectedItems={selectedItems}
-              subtotal={subtotal}
-              markupTotal={markupTotal}
-              discountTotal={discountTotal}
-              taxTotal={taxTotal}
-              retainerApplied={retainerApplied}
-              total={total}
-              currency={currency}
-              settings={settings}
+            <TemplatePreview
+              templateId={selectedTemplateId}
+              data={{
+                settings,
+                client,
+                document: {
+                  invoice_number: invoiceNumber,
+                  invoice_date: invoiceDate,
+                  due_date: dueDate,
+                  terms,
+                  subtotal,
+                  markup_total: markupTotal,
+                  discount_total: discountTotal,
+                  tax_total: taxTotal,
+                  retainer_applied: retainerApplied,
+                  total,
+                  notes: comments,
+                },
+                lineItems: selectedItems,
+                docType: 'invoice',
+                currency,
+              }}
             />
           )}
         </div>
@@ -344,92 +352,37 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
   );
 }
 
-function InvoicePreview({ client, invoiceNumber, invoiceDate, dueDate, terms, selectedItems, subtotal, markupTotal, discountTotal, taxTotal, retainerApplied, total, currency, settings }) {
-  const clientName = client.is_company ? client.company : `${client.first_name} ${client.last_name}`;
+function TemplatePreview({ templateId, data }) {
+  const [blocks, setBlocks] = useState([]);
 
-  // Group items by category
-  const grouped = {};
-  for (const item of selectedItems) {
-    const cat = item.category_name || 'Uncategorised';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(item);
+  useEffect(() => {
+    async function load() {
+      if (templateId) {
+        try {
+          const template = await window.api.getTemplate(templateId);
+          if (template) setBlocks(JSON.parse(template.blocks_json || '[]'));
+        } catch { /* ignore */ }
+      }
+      if (!templateId) {
+        // fallback: load default invoice template
+        try {
+          const templates = await window.api.getTemplates('invoice');
+          const def = templates.find((t) => t.is_default) || templates[0];
+          if (def) setBlocks(JSON.parse(def.blocks_json || '[]'));
+        } catch { /* ignore */ }
+      }
+    }
+    load();
+  }, [templateId]);
+
+  if (blocks.length === 0) {
+    return <div className="text-center text-sm text-gray-400 py-8">No template blocks to preview.</div>;
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded shadow-sm p-8 max-w-[595px] mx-auto text-sm" style={{ fontFamily: '-apple-system, sans-serif' }}>
-      {/* Header */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{settings.business_name || 'Krull D+A'}</h1>
-          {settings.abn && <p className="text-xs text-gray-500">ABN: {settings.abn}</p>}
-        </div>
-        <div className="text-right">
-          <h2 className="text-lg font-bold text-gray-400 uppercase">Invoice</h2>
-          <p className="text-sm font-medium">{invoiceNumber}</p>
-        </div>
-      </div>
-
-      {/* Bill To */}
-      <div className="grid grid-cols-2 gap-8 mb-6">
-        <div>
-          <p className="text-xs text-gray-500 uppercase mb-1">Bill To</p>
-          <p className="font-medium">{clientName}</p>
-          {client.address_street && <p className="text-xs text-gray-600">{client.address_street}</p>}
-          {(client.address_city || client.address_state) && (
-            <p className="text-xs text-gray-600">{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>
-          )}
-        </div>
-        <div className="text-right">
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>Date: <span className="text-gray-800">{invoiceDate}</span></p>
-            <p>Due: <span className="text-gray-800">{dueDate}</span></p>
-            <p>Terms: <span className="text-gray-800">{terms}</span></p>
-          </div>
-        </div>
-      </div>
-
-      {/* Line Items grouped by Category */}
-      <table className="w-full text-xs mb-6">
-        <thead>
-          <tr className="border-b border-gray-300">
-            <th className="text-left py-2 font-medium text-gray-500">Description</th>
-            <th className="text-right py-2 font-medium text-gray-500 w-16">Qty</th>
-            <th className="text-right py-2 font-medium text-gray-500 w-20">Rate</th>
-            <th className="text-right py-2 font-medium text-gray-500 w-20">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(grouped).map(([category, items]) => (
-            <React.Fragment key={category}>
-              <tr>
-                <td colSpan={4} className="pt-3 pb-1 font-bold text-gray-800 uppercase text-[11px]">{category}</td>
-              </tr>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-gray-100">
-                  <td className="py-1.5 text-gray-700">{item.name}</td>
-                  <td className="py-1.5 text-right tabular-nums text-gray-600">{item.quantity}</td>
-                  <td className="py-1.5 text-right tabular-nums text-gray-600">{formatCurrency(item.rate, currency)}</td>
-                  <td className="py-1.5 text-right tabular-nums font-medium">{formatCurrency(item.total, currency)}</td>
-                </tr>
-              ))}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Totals */}
-      <div className="flex justify-end">
-        <div className="w-48 space-y-1 text-xs">
-          <div className="flex justify-between"><span className="text-gray-500">SUBTOTAL</span><span className="tabular-nums">{formatCurrency(subtotal, currency)}</span></div>
-          {taxTotal > 0 && <div className="flex justify-between"><span className="text-gray-500">GST 10%</span><span className="tabular-nums">{formatCurrency(taxTotal, currency)}</span></div>}
-          {retainerApplied > 0 && <div className="flex justify-between text-green-600"><span>Retainer</span><span className="tabular-nums">-{formatCurrency(retainerApplied, currency)}</span></div>}
-          <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-300"><span>TOTAL</span><span className="tabular-nums">{formatCurrency(total, currency)}</span></div>
-        </div>
-      </div>
-
-      {/* Terms */}
-      <div className="mt-8 pt-4 border-t border-gray-200">
-        <p className="text-[10px] text-gray-400">TERMS: Payment due within {terms.toLowerCase()}.</p>
+    <div className="flex justify-center">
+      <div className="border border-gray-200 rounded shadow-sm">
+        <DocumentRenderer blocks={blocks} data={data} />
       </div>
     </div>
   );
