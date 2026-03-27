@@ -68,7 +68,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
       setSelectedTemplateId(tmpls.find((t) => t.is_default)?.id || tmpls[0]?.id || null);
       setSettings(stngs);
 
-      const prefix = stngs.invoice_prefix || 'INV-';
+      const prefix = stngs.invoice_prefix || '';
       const nextNum = stngs.invoice_next_number || '1001';
       setInvoiceNumber(`${prefix}${nextNum}`);
       setInvoiceDate(new Date().toISOString().slice(0, 10));

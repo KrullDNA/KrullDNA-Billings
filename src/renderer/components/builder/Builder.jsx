@@ -246,18 +246,27 @@ function SortableBlock({ block, data, isSelected, onSelect, onDelete }) {
 // ── Standalone document renderer (non-interactive, for previews) ──
 
 export function DocumentRenderer({ blocks, data }) {
-  const mainBlocks = blocks.filter((b) => b.type !== 'footer_block');
+  const contentBlocks = blocks.filter((b) => b.type !== 'footer_block' && b.type !== 'totals_block' && b.type !== 'spacer_block');
+  const totalsBlocks = blocks.filter((b) => b.type === 'totals_block');
   const footerBlocks = blocks.filter((b) => b.type === 'footer_block');
 
   return (
     <div className="bg-white flex flex-col" style={{ width: 595, minHeight: 842, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
-      <div className="flex-1 p-8">
-        {mainBlocks.map((block) => (
+      {/* Content — does not grow */}
+      <div className="p-8 pb-0">
+        {contentBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
       </div>
+      {/* Totals — pushed to bottom of content area */}
+      <div className="mt-auto px-8 pb-4">
+        {totalsBlocks.map((block) => (
+          <div key={block.id}>{renderBlock(block, data)}</div>
+        ))}
+      </div>
+      {/* Footer — always at bottom */}
       {footerBlocks.length > 0 && (
-        <div className="p-8 pt-0">
+        <div className="px-8 pb-8">
           {footerBlocks.map((block) => (
             <div key={block.id}>{renderBlock(block, data)}</div>
           ))}

@@ -54,7 +54,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
       setSelectedTemplateId(tmpls.find((t) => t.is_default)?.id || tmpls[0]?.id || null);
       setSettings(stngs);
 
-      const prefix = stngs.estimate_prefix || 'EST-';
+      const prefix = stngs.estimate_prefix || '';
       const nextNum = stngs.estimate_next_number || '1001';
       setEstimateNumber(`${prefix}${nextNum}`);
       setEstimateDate(new Date().toISOString().slice(0, 10));
