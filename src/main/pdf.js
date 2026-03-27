@@ -134,11 +134,6 @@ function findChrome() {
 function renderToHtml(blocks, data) {
   const { settings, isPaid } = data;
 
-  let bodyHtml = '';
-  for (const block of blocks) {
-    bodyHtml += renderBlockToHtml(block, data);
-  }
-
   const paidStamp = isPaid ? `
     <div style="position:fixed;top:120px;right:60px;width:160px;height:160px;transform:rotate(-18deg);pointer-events:none;z-index:100;">
       <div style="width:150px;height:150px;border:5px solid #dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center;">
@@ -146,6 +141,17 @@ function renderToHtml(blocks, data) {
       </div>
     </div>
   ` : '';
+
+  // Split blocks into body and footer (footer_block always goes at page bottom)
+  let mainHtml = '';
+  let footerHtml = '';
+  for (const block of blocks) {
+    if (block.type === 'footer_block') {
+      footerHtml += renderBlockToHtml(block, data);
+    } else {
+      mainHtml += renderBlockToHtml(block, data);
+    }
+  }
 
   return `<!DOCTYPE html>
 <html>
@@ -155,11 +161,14 @@ function renderToHtml(blocks, data) {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #111827; line-height: 1.5; }
   table { border-collapse: collapse; }
+  @page { margin: 15mm; }
+  .page-footer { position: fixed; bottom: 0; left: 0; right: 0; }
 </style>
 </head>
 <body>
 ${paidStamp}
-${bodyHtml}
+${mainHtml}
+${footerHtml ? `<div class="page-footer">${footerHtml}</div>` : ''}
 </body>
 </html>`;
 }
@@ -302,13 +311,13 @@ function totalsHtml(props, data) {
   if (props.showTax && (doc.tax_total || 0) > 0) rows += totalsRowHtml('GST 10%', fmt(doc.tax_total, currency));
   if (props.showRetainer && (doc.retainer_applied || 0) > 0) rows += totalsRowHtml('RETAINER', `-${fmt(doc.retainer_applied, currency)}`);
 
-  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 0;font-weight:700;font-size:11px;width:100px;">${fmt(doc.total, currency)}</td></tr>`;
+  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 12px 6px 0;font-weight:700;font-size:11px;width:110px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
   return rows;
 }
 
 function totalsRowHtml(label, value) {
-  return `<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:right;padding:5px 12px;color:#374151;font-size:11px;">${label}</td><td style="text-align:right;padding:5px 0;font-size:11px;width:100px;">${value}</td></tr>`;
+  return `<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:right;padding:5px 12px;color:#374151;font-size:11px;">${label}</td><td style="text-align:right;padding:5px 12px 5px 0;font-size:11px;width:110px;">${value}</td></tr>`;
 }
 
 function notesHtml(props, data) {
@@ -366,24 +375,38 @@ function textHtml(props, data) {
 function footerHtml(props, data) {
   const s = (data && data.settings) || {};
   const doc = (data && data.document) || {};
+  const isEstimate = data && data.docType === 'estimate';
   let html = '';
 
-  // Terms
-  const terms = doc.terms || props.defaultTerms;
-  if (terms) html += `<div style="margin-bottom:12px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
-
-  // Banking Details
-  if (s.bank_name) {
-    html += `<div style="margin-bottom:16px;font-size:10px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
-    html += `<table style="font-size:10px;border-collapse:collapse;">`;
-    if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
-    if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
-    if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
-    if (s.bank_account) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">ACCOUNT:</td><td>${esc(s.bank_account)}</td></tr>`;
-    html += `</table></div>`;
+  // Estimate: signature lines + disclosure
+  if (isEstimate) {
+    html += `<div style="display:flex;justify-content:space-between;margin:20px 0;font-size:10px;">`;
+    html += `<div>CLIENT SIGNATURE: <span style="display:inline-block;width:150px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
+    html += `<div>PRINT: <span style="display:inline-block;width:180px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
+    html += `<div>DATE: <span style="display:inline-block;width:120px;border-bottom:1px solid #111;">&nbsp;</span></div>`;
+    html += `</div>`;
+    if (s.estimate_disclosure) {
+      html += `<div style="font-size:8px;color:#374151;line-height:1.5;margin-bottom:16px;">${esc(s.estimate_disclosure)}</div>`;
+    }
   }
 
-  // Business footer
+  // Invoice: terms + banking
+  if (!isEstimate) {
+    const terms = doc.terms || props.defaultTerms;
+    if (terms) html += `<div style="margin-bottom:12px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
+
+    if (s.bank_name) {
+      html += `<div style="margin-bottom:16px;font-size:10px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+      html += `<table style="font-size:10px;border-collapse:collapse;">`;
+      if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
+      if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
+      if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
+      if (s.bank_account) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">ACCOUNT:</td><td>${esc(s.bank_account)}</td></tr>`;
+      html += `</table></div>`;
+    }
+  }
+
+  // Business footer — always shown
   if (s.business_name) {
     let line1 = `<strong>${esc(s.business_name)}</strong>`;
     if (s.abn) line1 += ` &bull; <strong>ABN</strong>: ${esc(s.abn)}`;

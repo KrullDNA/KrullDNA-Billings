@@ -515,7 +515,7 @@ function getInvoice(id) {
 
 function createInvoice(data, lineItemIds) {
   const nextNum = getSettingValue('invoice_next_number') || '1001';
-  const prefix = getSettingValue('invoice_prefix') || 'INV-';
+  const prefix = getSettingValue('invoice_prefix') || '';
   const invoiceNumber = `${prefix}${nextNum}`;
 
   const result = db.prepare(`
@@ -613,7 +613,7 @@ function getEstimate(id) {
 
 function createEstimate(data, lineItemIds) {
   const nextNum = getSettingValue('estimate_next_number') || '1001';
-  const prefix = getSettingValue('estimate_prefix') || 'EST-';
+  const prefix = getSettingValue('estimate_prefix') || '';
   const estimateNumber = `${prefix}${nextNum}`;
 
   const result = db.prepare(`
