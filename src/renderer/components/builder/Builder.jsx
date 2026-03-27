@@ -253,20 +253,20 @@ export function DocumentRenderer({ blocks, data }) {
 
   return (
     <div className="bg-white flex flex-col" style={{ width: 595, minHeight: 842, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
-      {/* Header — 50px from top, 20px gap to table */}
-      <div style={{ padding: '50px 40px 20px 40px' }}>
+      {/* Header */}
+      <div style={{ padding: '20px 30px 10px 30px' }}>
         {headerBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
       </div>
       {/* Body — line items table */}
-      <div style={{ padding: '0 40px' }}>
+      <div style={{ padding: '0 30px' }}>
         {bodyBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
       </div>
-      {/* Totals + Footer — pushed to bottom, 20px gap from table, 50px from page bottom */}
-      <div className="mt-auto" style={{ padding: '20px 40px 50px 40px' }}>
+      {/* Totals + Footer */}
+      <div className="mt-auto" style={{ padding: '10px 30px 20px 30px' }}>
         {totalsBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
