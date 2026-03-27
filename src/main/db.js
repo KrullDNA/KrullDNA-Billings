@@ -262,6 +262,15 @@ function seedDefaults() {
     }
   }
 
+  // Seed default payment methods
+  const hasMethods = db.prepare("SELECT value FROM settings WHERE key = 'payment_methods'").get();
+  if (!hasMethods) {
+    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run(
+      'payment_methods',
+      JSON.stringify(['Electronic', 'Cash', 'Cheque', 'Credit Card', 'Bank Transfer'])
+    );
+  }
+
   // Seed default document templates
   const templateCount = db.prepare('SELECT COUNT(*) as c FROM document_templates').get().c;
   if (templateCount === 0) {

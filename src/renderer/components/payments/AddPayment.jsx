@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
-const METHODS = ['Electronic', 'Cash', 'Cheque', 'Credit Card', 'Other'];
-
 function formatCurrency(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';
   return `${sym}${(amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -12,14 +10,22 @@ function formatCurrency(amount, currency = 'AUD') {
 export default function AddPayment({ open, onClose, client, invoice, currency, onSaved }) {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Electronic');
+  const [methods, setMethods] = useState(['Electronic', 'Cash', 'Cheque', 'Credit Card', 'Bank Transfer']);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    if (open && invoice) {
-      // Pre-fill with outstanding balance
-      const outstanding = (invoice.total || 0) - (invoice.paid_amount || 0);
-      setAmount(outstanding > 0 ? outstanding.toFixed(2) : '');
+    if (open) {
+      // Load payment methods from settings
+      window.api.getSettings().then((s) => {
+        if (s.payment_methods) {
+          try { setMethods(JSON.parse(s.payment_methods)); } catch { /* ignore */ }
+        }
+      }).catch(() => {});
+      if (invoice) {
+        const outstanding = (invoice.total || 0) - (invoice.paid_amount || 0);
+        setAmount(outstanding > 0 ? outstanding.toFixed(2) : '');
+      }
       setMethod('Electronic');
       setPaymentDate(new Date().toISOString().slice(0, 10));
       setNotes('');
@@ -77,7 +83,7 @@ export default function AddPayment({ open, onClose, client, invoice, currency, o
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Payment Method</label>
           <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
-            {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+            {methods.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
 
