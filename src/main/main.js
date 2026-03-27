@@ -172,8 +172,14 @@ function registerIpcHandlers() {
   ipcMain.handle('getSettings', () => db.getSettings());
   ipcMain.handle('saveSetting', (_, key, value) => db.saveSetting(key, value));
   ipcMain.handle('saveSettings', (_, obj) => db.saveSettings(obj));
-  ipcMain.handle('uploadLogo', async (_, sourcePath) => {
-    const fs = require('fs');
+  ipcMain.handle('uploadLogo', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Logo',
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    const sourcePath = result.filePaths[0];
     const dest = path.join(app.getPath('userData'), 'logo' + path.extname(sourcePath));
     fs.copyFileSync(sourcePath, dest);
     db.saveSetting('logo_path', dest);

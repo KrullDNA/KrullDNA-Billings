@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentRenderer } from '../builder/Builder';
 
-const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
+const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 
 function formatCurrency(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';

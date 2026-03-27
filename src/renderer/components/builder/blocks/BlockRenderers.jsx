@@ -1,14 +1,23 @@
 import React from 'react';
 
-const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
+const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 function fmt(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';
   return `${sym}${(amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+const FONT = "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif";
+
 export function renderBlock(block, data) {
   const { type, props } = block;
-  const style = { paddingTop: props.paddingTop || 0, paddingBottom: props.paddingBottom || 0 };
+  const style = { paddingTop: props.paddingTop || 0, paddingBottom: props.paddingBottom || 0, fontFamily: FONT };
 
   switch (type) {
     case 'header_block': return <HeaderBlock props={props} data={data} style={style} />;
@@ -24,172 +33,221 @@ export function renderBlock(block, data) {
   }
 }
 
+// ── Header: label:value pairs left, logo top-right ──
+
 function HeaderBlock({ props, data, style }) {
   const settings = data.settings || {};
+  const doc = data.document || {};
+  const client = data.client || {};
+  const isInvoice = data.docType === 'invoice';
+  const contactName = [client.first_name, client.last_name].filter(Boolean).join(' ');
+
   return (
-    <div style={{ ...style, backgroundColor: props.bgColor, color: props.textColor }} className="flex items-start justify-between">
-      <div className={`flex items-start gap-4 ${props.logoAlign === 'right' ? 'flex-row-reverse w-full' : ''}`}>
-        {props.showLogo && (
-          <div className="w-16 h-16 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[10px] text-gray-400 flex-shrink-0">Logo</div>
-        )}
-        <div>
-          {props.showBusinessName && <p className="text-lg font-bold">{settings.business_name || 'Krull D+A'}</p>}
-          {props.showAbn && settings.abn && <p className="text-[10px] opacity-70">ABN: {settings.abn}</p>}
-          {props.showContact && (
-            <div className="text-[10px] opacity-70 mt-1">
-              {settings.email && <p>{settings.email}</p>}
-              {settings.phone && <p>{settings.phone}</p>}
-              {settings.address_street && <p>{settings.address_street}</p>}
-              {(settings.address_city || settings.address_state) && (
-                <p>{[settings.address_city, settings.address_state, settings.address_postcode].filter(Boolean).join(', ')}</p>
-              )}
-            </div>
-          )}
+    <div style={{ ...style, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      {/* Left: label-value pairs */}
+      <div style={{ fontSize: 11 }}>
+        <table style={{ borderCollapse: 'collapse' }}>
+          <tbody>
+            <LabelRow label={isInvoice ? 'TAX INVOICE' : 'ESTIMATE'} value={isInvoice ? doc.invoice_number : doc.estimate_number || ''} />
+            {client.company && <LabelRow label="CLIENT" value={client.company} />}
+            {contactName && <LabelRow label="ATTENTION" value={contactName} />}
+            {doc.project_name && <LabelRow label="DESCRIPTION" value={doc.project_name} />}
+            <LabelRow label="DATE" value={fmtDate(isInvoice ? doc.invoice_date : doc.estimate_date)} />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Right: logo */}
+      {props.showLogo && (
+        <div style={{ width: 80, height: 80, backgroundColor: '#1a1a1a', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, textAlign: 'center', flexShrink: 0, letterSpacing: '0.15em' }}>
+          <div>
+            <div style={{ fontWeight: 300, fontSize: 11, letterSpacing: '0.25em' }}>K R U L L</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>D+A</div>
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function LabelRow({ label, value }) {
+  return (
+    <tr>
+      <td style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', textAlign: 'right', paddingRight: 8, paddingBottom: 2, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{label}:</td>
+      <td style={{ fontSize: 11, paddingBottom: 2 }}>{value}</td>
+    </tr>
+  );
+}
+
+// ── Doc Title: DESCRIPTION / AMOUNT column header bar ──
+
+function DocTitleBlock({ props, data, style }) {
+  return (
+    <div style={{ ...style }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #111', paddingBottom: 4 }}>
+        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {props.titleLabel || 'DESCRIPTION'}
+        </span>
+        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          AMOUNT
+        </span>
       </div>
     </div>
   );
 }
+
+// ── Client Block (not used in KD layout, kept for flexibility) ──
 
 function ClientBlock({ props, data, style }) {
   const client = data.client || {};
-  const name = client.is_company ? client.company : [client.first_name, client.last_name].filter(Boolean).join(' ');
+  const contactName = [client.first_name, client.last_name].filter(Boolean).join(' ');
   return (
-    <div style={{ ...style, fontSize: props.fontSize }}>
-      <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">{props.sectionLabel || 'BILL TO'}</p>
-      <p className="font-medium">{name || 'Client Name'}</p>
-      {client.address_street && <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{client.address_street}</p>}
+    <div style={{ ...style, fontSize: props.fontSize || 11 }}>
+      <p style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 3 }}>{props.sectionLabel || 'BILL TO'}</p>
+      {client.company && <p style={{ fontWeight: 500 }}>{client.company}</p>}
+      {contactName && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{contactName}</p>}
+      {client.address_street && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.address_street}</p>}
       {(client.address_city || client.address_state) && (
-        <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>
+        <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{[client.address_city, client.address_state, client.address_postcode].filter(Boolean).join(', ')}</p>
       )}
-      {props.showEmail && client.email && <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{client.email}</p>}
-      {props.showPhone && client.phone && <p className="text-gray-600" style={{ fontSize: props.fontSize - 1 }}>{client.phone}</p>}
+      {props.showEmail && client.email && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.email}</p>}
+      {props.showPhone && client.phone && <p style={{ color: '#4b5563', fontSize: (props.fontSize || 11) - 1 }}>{client.phone}</p>}
     </div>
   );
 }
 
-function DocTitleBlock({ props, data, style }) {
-  const doc = data.document || {};
-  const isInvoice = data.docType === 'invoice';
-  return (
-    <div style={style} className="flex justify-between items-start">
-      <h2 className="text-xl font-bold text-gray-400 uppercase tracking-wider">{props.titleLabel || (isInvoice ? 'TAX INVOICE' : 'ESTIMATE')}</h2>
-      <div className="text-right text-xs text-gray-600 space-y-0.5">
-        {props.showNumber && <p className="text-sm font-semibold text-gray-900">{isInvoice ? doc.invoice_number : doc.estimate_number || '#0000'}</p>}
-        {props.showDate && <p>Date: {isInvoice ? doc.invoice_date : doc.estimate_date || 'N/A'}</p>}
-        {props.showDueDate && isInvoice && doc.due_date && <p>Due: {doc.due_date}</p>}
-        {props.showDueDate && isInvoice && doc.terms && <p>Terms: {doc.terms}</p>}
-        {props.showDueDate && !isInvoice && doc.expiry_date && <p>Expires: {doc.expiry_date}</p>}
-      </div>
-    </div>
-  );
-}
+// ── Line Items: category bold header, description below, amount right, dividers ──
 
 function LineItemsBlock({ props, data, style }) {
   const items = data.lineItems || [];
   const currency = data.currency || 'AUD';
 
-  // Group by category, respecting category sort order
   const grouped = {};
   const catOrder = [];
   for (const item of items) {
     const cat = item.category_name || '';
-    if (!grouped[cat]) {
-      grouped[cat] = [];
-      catOrder.push(cat);
-    }
+    if (!grouped[cat]) { grouped[cat] = []; catOrder.push(cat); }
     grouped[cat].push(item);
   }
 
   return (
     <div style={style}>
-      <table className="w-full" style={{ fontSize: props.fontSize }}>
-        <thead>
-          <tr style={{ backgroundColor: props.headerBg, color: props.headerText }}>
-            <th className="text-left py-1.5 px-2 font-medium">Description</th>
-            <th className="text-right py-1.5 px-2 font-medium w-14">Qty</th>
-            <th className="text-right py-1.5 px-2 font-medium w-20">Rate</th>
-            {props.showTaxCol && <th className="text-right py-1.5 px-2 font-medium w-16">Tax</th>}
-            <th className="text-right py-1.5 px-2 font-medium w-20">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {catOrder.map((cat) => (
-            <React.Fragment key={cat || '__none'}>
-              {/* Category header row */}
-              {cat && (
-                <tr>
-                  <td colSpan={props.showTaxCol ? 5 : 4}
-                    className="font-bold py-1.5 px-2 uppercase"
-                    style={{ backgroundColor: props.categoryBg, color: props.categoryText, fontSize: props.fontSize }}
-                  >
-                    {cat}
-                  </td>
-                </tr>
-              )}
-              {/* Line item rows */}
-              {grouped[cat].map((item, idx) => (
-                <tr key={item.id || idx}
-                  className="border-b border-gray-100"
-                  style={props.alternateRows && idx % 2 === 1 ? { backgroundColor: '#f9fafb' } : {}}
-                >
-                  <td className="py-1 px-2 text-gray-700">{item.name}</td>
-                  <td className="py-1 px-2 text-right text-gray-600 tabular-nums">{item.quantity}</td>
-                  <td className="py-1 px-2 text-right text-gray-600 tabular-nums">{fmt(item.rate, currency)}</td>
-                  {props.showTaxCol && <td className="py-1 px-2 text-right text-gray-500 tabular-nums">{fmt(item.tax_amount, currency)}</td>}
-                  <td className="py-1 px-2 text-right font-medium tabular-nums">{fmt(item.total, currency)}</td>
-                </tr>
-              ))}
-            </React.Fragment>
+      {catOrder.map((cat, catIdx) => (
+        <div key={cat || '__none'}>
+          {/* Divider between groups */}
+          {catIdx > 0 && <hr style={{ border: 'none', borderTop: '1px solid #111', margin: '16px 0' }} />}
+
+          {grouped[cat].map((item, idx) => (
+            <div key={item.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0' }}>
+              <div style={{ flex: 1 }}>
+                {/* Category as bold header */}
+                {cat && idx === 0 && (
+                  <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 2, letterSpacing: '0.02em' }}>{cat}</div>
+                )}
+                <div style={{ fontSize: 11, color: '#374151' }}>{item.name}</div>
+              </div>
+              <div style={{ fontSize: 11, textAlign: 'right', minWidth: 90, fontVariantNumeric: 'tabular-nums' }}>
+                {fmt(item.total, currency)}
+              </div>
+            </div>
           ))}
-          {items.length === 0 && (
-            <tr><td colSpan={props.showTaxCol ? 5 : 4} className="py-4 text-center text-gray-400 text-xs">No line items</td></tr>
+        </div>
+      ))}
+      {items.length === 0 && (
+        <div style={{ padding: '16px 0', textAlign: 'center', color: '#9ca3af', fontSize: 11 }}>No line items</div>
+      )}
+    </div>
+  );
+}
+
+// ── Totals: right-aligned table with TOTAL row highlighted ──
+
+function TotalsBlock({ props, data, style }) {
+  const doc = data.document || {};
+  const currency = data.currency || 'AUD';
+
+  return (
+    <div style={{ ...style }}>
+      <hr style={{ border: 'none', borderTop: '1px solid #111', marginBottom: 0 }} />
+      <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+        <tbody>
+          {props.showSubtotal && (
+            <TotalsRow label="SUBTOTAL" value={fmt(doc.subtotal, currency)} />
           )}
+          {props.showMarkup && (doc.markup_total || 0) > 0 && (
+            <TotalsRow label="MARKUP" value={fmt(doc.markup_total, currency)} />
+          )}
+          {props.showDiscount && (doc.discount_total || 0) > 0 && (
+            <TotalsRow label="DISCOUNT" value={`-${fmt(doc.discount_total, currency)}`} />
+          )}
+          {props.showTax && (doc.tax_total || 0) > 0 && (
+            <TotalsRow label="GST 10%" value={fmt(doc.tax_total, currency)} />
+          )}
+          {props.showRetainer && (doc.retainer_applied || 0) > 0 && (
+            <TotalsRow label="RETAINER" value={`-${fmt(doc.retainer_applied, currency)}`} />
+          )}
+          <tr style={{ backgroundColor: props.highlightTotal ? '#f3f4f6' : 'transparent' }}>
+            <td style={{ textAlign: 'right', padding: '6px 12px', fontWeight: 700, fontSize: 11 }}>TOTAL</td>
+            <td style={{ textAlign: 'right', padding: '6px 0', fontWeight: 700, fontSize: 11, width: 100, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
+          </tr>
         </tbody>
       </table>
     </div>
   );
 }
 
-function TotalsBlock({ props, data, style }) {
-  const doc = data.document || {};
-  const currency = data.currency || 'AUD';
-  const align = props.alignment === 'left' ? 'items-start' : 'items-end';
-
+function TotalsRow({ label, value }) {
   return (
-    <div style={style} className={`flex flex-col ${align}`}>
-      <div className="w-48 space-y-1 text-xs">
-        {props.showSubtotal && <Row label="SUBTOTAL" value={fmt(doc.subtotal, currency)} />}
-        {props.showMarkup && (doc.markup_total || 0) > 0 && <Row label="MARKUP" value={`+${fmt(doc.markup_total, currency)}`} />}
-        {props.showDiscount && (doc.discount_total || 0) > 0 && <Row label="DISCOUNT" value={`-${fmt(doc.discount_total, currency)}`} className="text-red-500" />}
-        {props.showTax && (doc.tax_total || 0) > 0 && <Row label="GST 10%" value={fmt(doc.tax_total, currency)} />}
-        {props.showRetainer && (doc.retainer_applied || 0) > 0 && <Row label="RETAINER" value={`-${fmt(doc.retainer_applied, currency)}`} className="text-green-600" />}
-        <div className={`flex justify-between pt-1 border-t border-gray-300 ${props.highlightTotal ? 'font-bold text-sm' : 'font-medium'}`}>
-          <span>TOTAL</span>
-          <span className="tabular-nums">{fmt(doc.total, currency)}</span>
-        </div>
-      </div>
-    </div>
+    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+      <td style={{ textAlign: 'right', padding: '5px 12px', color: '#374151', fontSize: 11 }}>{label}</td>
+      <td style={{ textAlign: 'right', padding: '5px 0', fontSize: 11, width: 100, fontVariantNumeric: 'tabular-nums' }}>{value}</td>
+    </tr>
   );
 }
 
-function Row({ label, value, className = '' }) {
-  return (
-    <div className={`flex justify-between ${className}`}>
-      <span className="text-gray-500">{label}</span>
-      <span className="tabular-nums">{value}</span>
-    </div>
-  );
-}
+// ── Notes: Terms + Banking Details ──
 
 function NotesBlock({ props, data, style }) {
   const doc = data.document || {};
+  const settings = data.settings || {};
   const notes = doc.notes || '';
-  if (!notes && !props.showIfEmpty) return null;
+  if (!notes && !props.showIfEmpty && !settings.bank_name) return null;
+
   return (
-    <div style={{ ...style, fontSize: props.fontSize }}>
-      <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">{props.sectionLabel || 'NOTES'}</p>
-      <p className="text-gray-600 whitespace-pre-wrap">{notes || 'No notes.'}</p>
+    <div style={{ ...style, fontSize: props.fontSize || 10 }}>
+      {/* Terms */}
+      {doc.terms && (
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.02em' }}>TERMS: </span>
+          <span style={{ fontSize: 10 }}>{doc.terms}</span>
+        </div>
+      )}
+      {/* Banking details */}
+      {settings.bank_name && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 10, marginBottom: 2, letterSpacing: '0.02em' }}>BANKING DETAILS:</div>
+          <table style={{ fontSize: 10, borderCollapse: 'collapse' }}>
+            <tbody>
+              {settings.bank_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BANK:</td><td>{settings.bank_name}</td></tr>}
+              {settings.bank_account_name && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>NAME:</td><td>{settings.bank_account_name}</td></tr>}
+              {settings.bank_bsb && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>BSB:</td><td>{settings.bank_bsb}</td></tr>}
+              {settings.bank_account && <tr><td style={{ fontWeight: 500, textAlign: 'right', paddingRight: 6 }}>ACCOUNT:</td><td>{settings.bank_account}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {/* Custom notes */}
+      {notes && <div style={{ color: '#4b5563', whiteSpace: 'pre-wrap' }}>{notes}</div>}
+    </div>
+  );
+}
+
+// ── Footer: business info line ──
+
+function TextBlock({ props, style }) {
+  return (
+    <div style={{ ...style, fontSize: props.fontSize || 10, color: props.color || '#374151', textAlign: props.alignment || 'left', fontWeight: props.bold ? 'bold' : 'normal' }}>
+      {props.content || ''}
     </div>
   );
 }
@@ -197,19 +255,11 @@ function NotesBlock({ props, data, style }) {
 function DividerBlock({ props, style }) {
   return (
     <div style={style}>
-      <hr style={{ borderTopWidth: props.weight, borderColor: props.color, width: `${props.widthPct}%` }} className="border-0 border-t" />
+      <hr style={{ border: 'none', borderTop: `${props.weight || 1}px solid ${props.color || '#111'}`, width: `${props.widthPct || 100}%`, margin: 0 }} />
     </div>
   );
 }
 
 function SpacerBlock({ props }) {
   return <div style={{ height: props.height || 24 }} />;
-}
-
-function TextBlock({ props, style }) {
-  return (
-    <div style={{ ...style, fontSize: props.fontSize, color: props.color, textAlign: props.alignment, fontWeight: props.bold ? 'bold' : 'normal' }}>
-      {props.content || ''}
-    </div>
-  );
 }

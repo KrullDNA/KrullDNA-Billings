@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LineItemForm from './LineItemForm';
 
-const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
+const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 function fmt(amount, c = 'AUD') { return `${CURRENCY_SYMBOLS[c] || '$'}${(amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 
 export default function AllSlips() {

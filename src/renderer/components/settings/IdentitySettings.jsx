@@ -24,19 +24,10 @@ export default function IdentitySettings() {
   }
 
   async function handleLogoUpload() {
-    // Use a file input trick since we can't trigger native dialog from renderer directly
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/png,image/jpeg,image/svg+xml';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        const result = await window.api.uploadLogo(file.path);
-        update('logo_path', result);
-      } catch (err) { console.error(err); }
-    };
-    input.click();
+    try {
+      const result = await window.api.uploadLogo();
+      if (result) update('logo_path', result);
+    } catch (err) { console.error('Logo upload failed:', err); }
   }
 
   async function handleRemoveLogo() {
@@ -85,6 +76,19 @@ export default function IdentitySettings() {
       <InputField label="Phone" value={settings.phone} onChange={(v) => update('phone', v)} />
       <InputField label="Email" value={settings.email} onChange={(v) => update('email', v)} />
       <InputField label="Website" value={settings.website} onChange={(v) => update('website', v)} />
+
+      {/* Banking Details (shown on invoices) */}
+      <fieldset className="border border-gray-200 rounded-md p-3 space-y-2">
+        <legend className="text-xs font-medium text-gray-500 px-1">Banking Details</legend>
+        <div className="grid grid-cols-2 gap-2">
+          <input placeholder="Bank Name" value={settings.bank_name || ''} onChange={(e) => update('bank_name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          <input placeholder="Account Name" value={settings.bank_account_name || ''} onChange={(e) => update('bank_account_name', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <input placeholder="BSB" value={settings.bank_bsb || ''} onChange={(e) => update('bank_bsb', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          <input placeholder="Account Number" value={settings.bank_account || ''} onChange={(e) => update('bank_account', e.target.value)} className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+        </div>
+      </fieldset>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
