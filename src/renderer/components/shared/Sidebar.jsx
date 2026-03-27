@@ -52,9 +52,12 @@ export default function Sidebar({
 
   useEffect(() => {
     loadClients();
+    // Load persisted collapsed state from localStorage
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('sidebar_expanded') || '{}'); } catch { /* ignore */ }
     const expanded = {};
     for (const group of clientGroups) {
-      expanded[group.id] = expandedGroups[group.id] !== undefined ? expandedGroups[group.id] : true;
+      expanded[group.id] = saved[group.id] !== undefined ? saved[group.id] : (expandedGroups[group.id] !== undefined ? expandedGroups[group.id] : true);
     }
     setExpandedGroups(expanded);
   }, [clientGroups]);
@@ -77,7 +80,11 @@ export default function Sidebar({
   }, [contextMenu]);
 
   function toggleGroup(groupId) {
-    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+    setExpandedGroups((prev) => {
+      const next = { ...prev, [groupId]: !prev[groupId] };
+      try { localStorage.setItem('sidebar_expanded', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
   }
 
   async function handleDragEnd(event) {
