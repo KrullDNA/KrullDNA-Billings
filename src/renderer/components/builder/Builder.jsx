@@ -246,20 +246,27 @@ function SortableBlock({ block, data, isSelected, onSelect, onDelete }) {
 // ── Standalone document renderer (non-interactive, for previews) ──
 
 export function DocumentRenderer({ blocks, data }) {
-  const contentBlocks = blocks.filter((b) => b.type !== 'footer_block' && b.type !== 'totals_block' && b.type !== 'spacer_block');
+  const headerBlocks = blocks.filter((b) => b.type === 'header_block');
+  const bodyBlocks = blocks.filter((b) => b.type !== 'header_block' && b.type !== 'footer_block' && b.type !== 'totals_block' && b.type !== 'spacer_block');
   const totalsBlocks = blocks.filter((b) => b.type === 'totals_block');
   const footerBlocks = blocks.filter((b) => b.type === 'footer_block');
 
   return (
     <div className="bg-white flex flex-col" style={{ width: 595, minHeight: 842, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
-      {/* Content — does not grow */}
-      <div className="p-8 pb-0">
-        {contentBlocks.map((block) => (
+      {/* Header — 50px from top, 20px gap to table */}
+      <div style={{ padding: '50px 40px 20px 40px' }}>
+        {headerBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
       </div>
-      {/* Totals + Footer — pushed to bottom, no gap between them */}
-      <div className="mt-auto px-8 pb-8">
+      {/* Body — line items table */}
+      <div style={{ padding: '0 40px' }}>
+        {bodyBlocks.map((block) => (
+          <div key={block.id}>{renderBlock(block, data)}</div>
+        ))}
+      </div>
+      {/* Totals + Footer — pushed to bottom, 20px gap from table, 50px from page bottom */}
+      <div className="mt-auto" style={{ padding: '20px 40px 50px 40px' }}>
         {totalsBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
