@@ -83,7 +83,7 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('getSettings'),
   saveSetting: (key, value) => ipcRenderer.invoke('saveSetting', key, value),
   saveSettings: (obj) => ipcRenderer.invoke('saveSettings', obj),
-  uploadLogo: (sourcePath) => ipcRenderer.invoke('uploadLogo', sourcePath),
+  uploadLogo: () => ipcRenderer.invoke('uploadLogo'),
   testSmtp: (config) => ipcRenderer.invoke('testSmtp', config),
 
   // Dashboard + Reports

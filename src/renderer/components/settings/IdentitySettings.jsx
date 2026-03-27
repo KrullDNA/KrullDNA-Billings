@@ -24,19 +24,10 @@ export default function IdentitySettings() {
   }
 
   async function handleLogoUpload() {
-    // Use a file input trick since we can't trigger native dialog from renderer directly
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/png,image/jpeg,image/svg+xml';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        const result = await window.api.uploadLogo(file.path);
-        update('logo_path', result);
-      } catch (err) { console.error(err); }
-    };
-    input.click();
+    try {
+      const result = await window.api.uploadLogo();
+      if (result) update('logo_path', result);
+    } catch (err) { console.error('Logo upload failed:', err); }
   }
 
   async function handleRemoveLogo() {

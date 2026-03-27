@@ -4,7 +4,7 @@ const os = require('os');
 const { app } = require('electron');
 const db = require('./db');
 
-const CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '\u20ac', GBP: '\u00a3', NZD: '$', CAD: '$', SGD: '$' };
+const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 
 function fmt(amount, currency) {
   const sym = CURRENCY_SYMBOLS[currency] || '$';

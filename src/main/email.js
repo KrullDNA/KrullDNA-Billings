@@ -1,5 +1,5 @@
 const { shell } = require('electron');
-const path = require('path');
+const { exec } = require('child_process');
 const db = require('./db');
 
 async function send(docType, docId, opts) {
@@ -16,9 +16,9 @@ async function send(docType, docId, opts) {
 
   // Generate PDF first
   const pdf = require('./pdf');
-  const { path: pdfPath, filename: pdfFilename } = await pdf.generate(docType, docId);
+  const { path: pdfPath } = await pdf.generate(docType, docId);
 
-  // Resolve placeholders in subject and body
+  // Resolve placeholders
   const total = (doc.total || 0).toFixed(2);
   const placeholders = {
     '{client_name}': clientName,
@@ -27,67 +27,49 @@ async function send(docType, docId, opts) {
     '{business_name}': settings.business_name || 'Krull D+A',
   };
 
-  function resolvePlaceholders(text) {
-    let result = text || '';
-    for (const [key, value] of Object.entries(placeholders)) {
-      result = result.split(key).join(value);
-    }
-    return result;
+  function resolve(text) {
+    let r = text || '';
+    for (const [k, v] of Object.entries(placeholders)) r = r.split(k).join(v);
+    return r;
   }
 
   const defaultSubject = isInvoice
     ? (settings.email_invoice_subject || 'Invoice {document_number} from {business_name}')
     : (settings.email_estimate_subject || 'Estimate {document_number} from {business_name}');
   const defaultBody = isInvoice
-    ? (settings.email_invoice_body || 'Please find attached invoice {document_number} for {total}.\n\nKind regards,\n{business_name}')
-    : (settings.email_estimate_body || 'Please find attached estimate {document_number} for {total}.\n\nKind regards,\n{business_name}');
+    ? (settings.email_invoice_body || 'Please find attached invoice {document_number} for ${total}.\n\nKind regards,\n{business_name}')
+    : (settings.email_estimate_body || 'Please find attached estimate {document_number} for ${total}.\n\nKind regards,\n{business_name}');
 
   const to = opts?.to || client.email || '';
-  const cc = opts?.cc || '';
-  const subject = resolvePlaceholders(opts?.subject || defaultSubject);
-  const body = resolvePlaceholders(opts?.body || defaultBody);
+  const subject = resolve(opts?.subject || defaultSubject);
+  const body = resolve(opts?.body || defaultBody);
 
-  // Check if SMTP is configured
-  const smtpHost = settings.smtp_host;
-  if (smtpHost) {
-    // Send via SMTP
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: parseInt(settings.smtp_port) === 465,
-      auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_pass,
-      },
-    });
+  // Open Mac Mail with PDF attachment via AppleScript
+  if (process.platform === 'darwin') {
+    const escapedSubject = subject.replace(/"/g, '\\"');
+    const escapedBody = body.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    const escapedPath = pdfPath.replace(/"/g, '\\"');
+    const escapedTo = to.replace(/"/g, '\\"');
 
-    const fromName = settings.smtp_from_name || settings.business_name || 'Krull D+A';
-    const fromEmail = settings.smtp_from_email || settings.email || settings.smtp_user;
+    const script = `
+      tell application "Mail"
+        set newMessage to make new outgoing message with properties {subject:"${escapedSubject}", content:"${escapedBody}", visible:true}
+        tell newMessage
+          ${escapedTo ? `make new to recipient at end of to recipients with properties {address:"${escapedTo}"}` : ''}
+          make new attachment with properties {file name:POSIX file "${escapedPath}"}
+        end tell
+        activate
+      end tell
+    `;
 
-    await transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
-      to,
-      cc: cc || undefined,
-      subject,
-      text: body,
-      attachments: [{
-        filename: pdfFilename,
-        path: pdfPath,
-      }],
+    await new Promise((resolve, reject) => {
+      exec(`osascript -e '${script.replace(/'/g, "'\\''")}'`, (err) => {
+        if (err) reject(err); else resolve();
+      });
     });
   } else {
-    // Fallback: open default mail client on Mac via mailto
-    // On Mac, open the PDF so user can drag it into Mail
-    if (process.platform === 'darwin') {
-      shell.openPath(pdfPath);
-      // Also open a mailto link
-      const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      shell.openExternal(mailto);
-    } else {
-      // On Windows, open the PDF
-      shell.openPath(pdfPath);
-    }
+    // Windows/Linux fallback: open PDF and let user attach manually
+    shell.openPath(pdfPath);
   }
 
   // Update sent_at on document
