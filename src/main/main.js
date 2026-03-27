@@ -5,7 +5,10 @@ const db = require('./db');
 const config = require('./config');
 
 let mainWindow;
-const isDev = !app.isPackaged;
+
+// Check if Vite dev server is intended (only when dist-renderer doesn't exist)
+const distPath = path.join(__dirname, '..', '..', 'dist-renderer', 'index.html');
+const isDev = !app.isPackaged && !fs.existsSync(distPath);
 
 function createWindow() {
   const windowState = config.getWindowState();
