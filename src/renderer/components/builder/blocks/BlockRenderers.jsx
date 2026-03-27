@@ -28,7 +28,7 @@ export function renderBlock(block, data) {
     case 'notes_block': return <NotesBlock props={props} data={data} style={style} />;
     case 'divider_block': return <DividerBlock props={props} style={style} />;
     case 'spacer_block': return <SpacerBlock props={props} />;
-    case 'text_block': return <TextBlock props={props} style={style} />;
+    case 'text_block': return <TextBlock props={props} data={data} style={style} />;
     default: return <div style={style} className="text-xs text-red-400">Unknown block: {type}</div>;
   }
 }
@@ -130,27 +130,37 @@ function LineItemsBlock({ props, data, style }) {
     grouped[cat].push(item);
   }
 
+  // Flatten all items with their category info for sequential rendering
+  const allItems = [];
+  for (const cat of catOrder) {
+    grouped[cat].forEach((item, idx) => {
+      allItems.push({ ...item, _cat: cat, _isFirstInCat: idx === 0 });
+    });
+  }
+
   return (
     <div style={style}>
-      {catOrder.map((cat, catIdx) => (
-        <div key={cat || '__none'}>
-          {/* Divider between groups */}
-          {catIdx > 0 && <hr style={{ border: 'none', borderTop: '1px solid #111', margin: '16px 0' }} />}
-
-          {grouped[cat].map((item, idx) => (
-            <div key={item.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0' }}>
-              <div style={{ flex: 1 }}>
-                {/* Category as bold header */}
-                {cat && idx === 0 && (
-                  <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 2, letterSpacing: '0.02em' }}>{cat}</div>
-                )}
-                <div style={{ fontSize: 11, color: '#374151' }}>{item.name}</div>
-              </div>
-              <div style={{ fontSize: 11, textAlign: 'right', minWidth: 90, fontVariantNumeric: 'tabular-nums' }}>
-                {fmt(item.total, currency)}
-              </div>
+      {allItems.map((item, i) => (
+        <div key={item.id || i}>
+          {/* Light grey divider between items (black for first item in new category group) */}
+          {i > 0 && (
+            <hr style={{ border: 'none', borderTop: item._isFirstInCat && item._cat ? '1px solid #111' : '1px solid #e5e7eb', margin: '12px 0' }} />
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '4px 0' }}>
+            <div style={{ flex: 1, paddingRight: 16 }}>
+              {item._cat && item._isFirstInCat && (
+                <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 2, letterSpacing: '0.02em' }}>{item._cat}</div>
+              )}
+              <div style={{ fontSize: 11, color: '#374151' }}>{item.name}</div>
+              {/* Comments/notes under the description */}
+              {item.notes && (
+                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>{item.notes}</div>
+              )}
             </div>
-          ))}
+            <div style={{ fontSize: 11, textAlign: 'right', minWidth: 90, fontVariantNumeric: 'tabular-nums' }}>
+              {fmt(item.total, currency)}
+            </div>
+          </div>
         </div>
       ))}
       {items.length === 0 && (
@@ -242,9 +252,37 @@ function NotesBlock({ props, data, style }) {
   );
 }
 
-// ── Footer: business info line ──
+// ── Footer: business info (auto-renders from settings when content is empty) ──
 
-function TextBlock({ props, style }) {
+function TextBlock({ props, data, style }) {
+  const settings = data?.settings || {};
+
+  // Auto-generate business footer if content is empty
+  if (!props.content && settings.business_name) {
+    const parts = [];
+    let line1 = '';
+    if (settings.business_name) line1 += settings.business_name;
+    if (settings.abn) line1 += ` \u2022 ABN: ${settings.abn}`;
+    parts.push(line1);
+
+    const addrParts = [settings.address_street, [settings.address_city, settings.address_state, settings.address_postcode].filter(Boolean).join(', '), settings.address_country].filter(Boolean);
+    if (addrParts.length) parts.push(addrParts.join(', '));
+
+    const contactParts = [];
+    if (settings.phone) contactParts.push(`T: ${settings.phone}`);
+    if (settings.email) contactParts.push(`E: ${settings.email}`);
+    if (settings.website) contactParts.push(`W: ${settings.website}`);
+    if (contactParts.length) parts.push(contactParts.join('    \u2022    '));
+
+    return (
+      <div style={{ ...style, fontSize: props.fontSize || 9, color: '#374151' }}>
+        {parts.map((line, i) => (
+          <div key={i} style={{ fontWeight: i === 0 ? 700 : 400 }}>{line}</div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div style={{ ...style, fontSize: props.fontSize || 10, color: props.color || '#374151', textAlign: props.alignment || 'left', fontWeight: props.bold ? 'bold' : 'normal' }}>
       {props.content || ''}
