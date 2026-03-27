@@ -86,6 +86,11 @@ contextBridge.exposeInMainWorld('api', {
   uploadLogo: (sourcePath) => ipcRenderer.invoke('uploadLogo', sourcePath),
   testSmtp: (config) => ipcRenderer.invoke('testSmtp', config),
 
-  // Dashboard
+  // Dashboard + Reports
   getDashboardStats: () => ipcRenderer.invoke('getDashboardStats'),
+  getAllLineItems: (filter) => ipcRenderer.invoke('getAllLineItems', filter),
+  getUnfiledLineItems: () => ipcRenderer.invoke('getUnfiledLineItems'),
+  getPendingEstimates: () => ipcRenderer.invoke('getPendingEstimates'),
+  getIncomeByClient: (startDate, endDate) => ipcRenderer.invoke('getIncomeByClient', startDate, endDate),
+  getTaxCollected: (startDate, endDate) => ipcRenderer.invoke('getTaxCollected', startDate, endDate),
 });

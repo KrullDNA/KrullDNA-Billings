@@ -185,6 +185,11 @@ function registerIpcHandlers() {
     }
   });
 
-  // Dashboard
+  // Dashboard + Reports
   ipcMain.handle('getDashboardStats', () => db.getDashboardStats());
+  ipcMain.handle('getAllLineItems', (_, filter) => db.getAllLineItems(filter));
+  ipcMain.handle('getUnfiledLineItems', () => db.getUnfiledLineItems());
+  ipcMain.handle('getPendingEstimates', () => db.getPendingEstimates());
+  ipcMain.handle('getIncomeByClient', (_, startDate, endDate) => db.getIncomeByClient(startDate, endDate));
+  ipcMain.handle('getTaxCollected', (_, startDate, endDate) => db.getTaxCollected(startDate, endDate));
 }

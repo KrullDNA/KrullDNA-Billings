@@ -8,6 +8,8 @@
     "dev": "vite & sleep 2 && electron .",
     "start": "vite build && electron .",
     "build": "vite build",
+    "build:mac": "vite build && electron-builder --mac",
+    "build:win": "vite build && electron-builder --win",
     "dist": "vite build && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -36,7 +38,7 @@
     "vite": "^6.0.7"
   },
   "build": {
-    "appId": "com.krulldna.billings",
+    "appId": "com.kdna.billingspro",
     "productName": "Krull D+A Billings",
     "directories": {
       "output": "dist"
@@ -44,15 +46,27 @@
     "files": [
       "src/**/*",
       "preload.js",
+      "dist-renderer/**/*",
       "package.json"
     ],
     "mac": {
-      "target": "dmg",
-      "icon": "build/icon.icns"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.business"
     },
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
     }
   }
 }

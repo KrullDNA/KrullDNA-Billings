@@ -187,24 +187,15 @@ export default function Sidebar({
         )}
       </nav>
 
-      {/* Bottom: Dashboard + Settings links */}
+      {/* Navigation links */}
       <div className="border-t border-gray-200 px-2 py-2 space-y-0.5">
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${
-            currentView === 'dashboard' ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => onNavigate('settings')}
-          className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${
-            currentView === 'settings' ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Settings
-        </button>
+        <NavButton label="Dashboard" view="dashboard" currentView={currentView} onNavigate={onNavigate} />
+        <NavButton label="All Slips" view="allslips" currentView={currentView} onNavigate={onNavigate} />
+        <NavButton label="Unfiled Slips" view="unfiled" currentView={currentView} onNavigate={onNavigate} />
+        <NavButton label="Approvals" view="approvals" currentView={currentView} onNavigate={onNavigate} />
+        <NavButton label="Reports" view="reports" currentView={currentView} onNavigate={onNavigate} />
+        <div className="border-t border-gray-100 my-1" />
+        <NavButton label="Settings" view="settings" currentView={currentView} onNavigate={onNavigate} />
       </div>
 
       {/* User info */}
@@ -352,5 +343,18 @@ function ContextMenu({ x, y, client, clientGroups, onMoveToGroup, onEdit, onArch
         Archive
       </button>
     </div>
+  );
+}
+
+function NavButton({ label, view, currentView, onNavigate }) {
+  return (
+    <button
+      onClick={() => onNavigate(view)}
+      className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${
+        currentView === view ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {label}
+    </button>
   );
 }

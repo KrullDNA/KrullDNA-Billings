@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ToastProvider } from './components/shared/Toast';
 import Sidebar from './components/shared/Sidebar';
 import Toolbar from './components/shared/Toolbar';
 import ClientView from './components/clients/ClientView';
 import ClientForm from './components/clients/ClientForm';
 import SettingsPanel from './components/settings/SettingsPanel';
+import Dashboard from './components/dashboard/Dashboard';
+import AllSlips from './components/lineitems/AllSlips';
+import UnfiledSlips from './components/lineitems/UnfiledSlips';
+import Approvals from './components/estimates/Approvals';
+import Reports from './components/dashboard/Reports';
 
 export default function App() {
   const [clientGroups, setClientGroups] = useState([]);
@@ -28,6 +34,22 @@ export default function App() {
     loadClientGroups();
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e) {
+      const meta = e.metaKey || e.ctrlKey;
+      if (e.key === 'Escape') {
+        if (clientFormOpen) setClientFormOpen(false);
+      }
+      if (meta && e.key === 'n') {
+        e.preventDefault();
+        handleAddClient(null);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clientFormOpen]);
+
   function handleAddClient(groupId) {
     setEditingClient(null);
     setDefaultGroupId(groupId || null);
@@ -42,14 +64,11 @@ export default function App() {
 
   async function handleClientSaved() {
     await loadClientGroups();
-    // Refresh selected client if it was being edited
     if (editingClient && selectedClient?.id === editingClient.id) {
       try {
         const updated = await window.api.getClient(editingClient.id);
         setSelectedClient(updated);
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     }
   }
 
@@ -58,64 +77,75 @@ export default function App() {
     if (client) setView('client');
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-white">
-      {/* Left Sidebar — 220px */}
-      <Sidebar
-        clientGroups={clientGroups}
-        selectedClient={selectedClient}
-        onSelectClient={handleSelectClient}
-        onNavigate={setView}
-        currentView={view}
-        onRefreshGroups={loadClientGroups}
-        onAddClient={handleAddClient}
-        onEditClient={handleEditClient}
-      />
+  function renderContent() {
+    switch (view) {
+      case 'client':
+        return selectedClient ? <ClientView client={selectedClient} /> : <EmptyState />;
+      case 'settings':
+        return <SettingsPanel />;
+      case 'dashboard':
+        return <Dashboard />;
+      case 'allslips':
+        return <AllSlips />;
+      case 'unfiled':
+        return <UnfiledSlips />;
+      case 'approvals':
+        return <Approvals />;
+      case 'reports':
+        return <Reports />;
+      default:
+        return <EmptyState />;
+    }
+  }
 
-      {/* Main Area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Top Toolbar */}
-        <Toolbar
-          view={view}
+  return (
+    <ToastProvider>
+      <div className="flex h-screen overflow-hidden bg-white">
+        <Sidebar
+          clientGroups={clientGroups}
           selectedClient={selectedClient}
-          onNewProject={() => {
-            if (selectedClient) {
-              // Trigger new project from ClientView
-              setView('client');
-            }
-          }}
-          onEditClient={() => {
-            if (selectedClient) handleEditClient(selectedClient);
-          }}
-          onNewClient={() => handleAddClient(null)}
+          onSelectClient={handleSelectClient}
+          onNavigate={setView}
+          currentView={view}
+          onRefreshGroups={loadClientGroups}
+          onAddClient={handleAddClient}
+          onEditClient={handleEditClient}
         />
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-hidden">
-          {view === 'client' && selectedClient ? (
-            <ClientView client={selectedClient} />
-          ) : view === 'settings' ? (
-            <SettingsPanel />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <div className="text-center">
-                <h2 className="text-2xl font-light mb-2">Krull D+A Billings</h2>
-                <p className="text-sm">Select a client or navigate from the sidebar to get started.</p>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+        <div className="flex flex-1 flex-col min-w-0">
+          <Toolbar
+            view={view}
+            selectedClient={selectedClient}
+            onNewProject={() => { if (selectedClient) setView('client'); }}
+            onEditClient={() => { if (selectedClient) handleEditClient(selectedClient); }}
+            onNewClient={() => handleAddClient(null)}
+          />
 
-      {/* Client Form Modal */}
-      <ClientForm
-        open={clientFormOpen}
-        onClose={() => setClientFormOpen(false)}
-        client={editingClient}
-        clientGroups={clientGroups}
-        defaultGroupId={defaultGroupId}
-        onSaved={handleClientSaved}
-      />
+          <main className="flex-1 overflow-hidden">
+            {renderContent()}
+          </main>
+        </div>
+
+        <ClientForm
+          open={clientFormOpen}
+          onClose={() => setClientFormOpen(false)}
+          client={editingClient}
+          clientGroups={clientGroups}
+          defaultGroupId={defaultGroupId}
+          onSaved={handleClientSaved}
+        />
+      </div>
+    </ToastProvider>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex items-center justify-center h-full text-gray-400">
+      <div className="text-center">
+        <h2 className="text-2xl font-light mb-2">Krull D+A Billings</h2>
+        <p className="text-sm">Select a client or navigate from the sidebar to get started.</p>
+      </div>
     </div>
   );
 }

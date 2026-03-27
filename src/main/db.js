@@ -771,16 +771,100 @@ function getDashboardStats() {
   const clientCount = db.prepare('SELECT COUNT(*) as c FROM clients WHERE archived = 0').get().c;
   const projectCount = db.prepare("SELECT COUNT(*) as c FROM projects WHERE status = 'active'").get().c;
   const unbilledTotal = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM line_items WHERE status = 'unbilled'").get().t;
-  const overdueInvoices = db.prepare("SELECT COUNT(*) as c FROM invoices WHERE status = 'overdue'").get().c;
+  const overdueCount = db.prepare("SELECT COUNT(*) as c FROM invoices WHERE status = 'overdue'").get().c;
+  const outstandingCount = db.prepare("SELECT COUNT(*) as c FROM invoices WHERE status IN ('sent', 'overdue')").get().c;
   const outstandingTotal = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM invoices WHERE status IN ('sent', 'overdue')").get().t;
   const paidThisMonth = db.prepare("SELECT COALESCE(SUM(amount), 0) as t FROM payments WHERE payment_date >= date('now', 'start of month')").get().t;
-  const recentInvoices = db.prepare('SELECT i.*, c.company, c.first_name, c.last_name FROM invoices i LEFT JOIN clients c ON i.client_id = c.id ORDER BY i.created_at DESC LIMIT 5').all();
-  const recentPayments = db.prepare('SELECT p.*, c.company, c.first_name, c.last_name, inv.invoice_number FROM payments p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN invoices inv ON p.invoice_id = inv.id ORDER BY p.created_at DESC LIMIT 5').all();
+  const pendingEstimates = db.prepare("SELECT COUNT(*) as c FROM estimates WHERE status = 'sent'").get().c;
+
+  const recentActivity = db.prepare(`
+    SELECT * FROM (
+      SELECT 'invoice' as doc_type, i.id, i.invoice_number as number, i.total as amount, i.status,
+        i.invoice_date as date, c.company, c.first_name, c.last_name, c.is_company
+      FROM invoices i LEFT JOIN clients c ON i.client_id = c.id
+      UNION ALL
+      SELECT 'estimate' as doc_type, e.id, e.estimate_number as number, e.total as amount, e.status,
+        e.estimate_date as date, c.company, c.first_name, c.last_name, c.is_company
+      FROM estimates e LEFT JOIN clients c ON e.client_id = c.id
+      UNION ALL
+      SELECT 'payment' as doc_type, p.id, inv.invoice_number as number, p.amount, 'paid' as status,
+        p.payment_date as date, c.company, c.first_name, c.last_name, c.is_company
+      FROM payments p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN invoices inv ON p.invoice_id = inv.id
+    ) ORDER BY date DESC LIMIT 10
+  `).all();
+
+  const overdueInvoices = db.prepare(`
+    SELECT i.*, c.company, c.first_name, c.last_name, c.is_company
+    FROM invoices i LEFT JOIN clients c ON i.client_id = c.id
+    WHERE i.status = 'overdue' ORDER BY i.due_date
+  `).all();
 
   return {
-    clientCount, projectCount, unbilledTotal, overdueInvoices,
-    outstandingTotal, paidThisMonth, recentInvoices, recentPayments,
+    clientCount, projectCount, unbilledTotal, overdueCount, outstandingCount,
+    outstandingTotal, paidThisMonth, pendingEstimates,
+    recentActivity, overdueInvoices,
   };
+}
+
+function getAllLineItems(filter) {
+  let where = '';
+  if (filter === 'unbilled') where = "WHERE li.status = 'unbilled'";
+  else if (filter === 'invoiced') where = "WHERE li.status = 'invoiced'";
+
+  return db.prepare(`
+    SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate,
+      p.name as project_name, cl.company as client_company, cl.first_name as client_first, cl.last_name as client_last, cl.is_company as client_is_company
+    FROM line_items li
+    LEFT JOIN categories c ON li.category_id = c.id
+    LEFT JOIN taxes t ON li.tax_id = t.id
+    LEFT JOIN projects p ON li.project_id = p.id
+    LEFT JOIN clients cl ON p.client_id = cl.id
+    ${where}
+    ORDER BY li.created_at DESC
+  `).all();
+}
+
+function getUnfiledLineItems() {
+  return db.prepare(`
+    SELECT li.*, c.name as category_name
+    FROM line_items li
+    LEFT JOIN categories c ON li.category_id = c.id
+    WHERE li.project_id IS NULL
+    ORDER BY li.created_at DESC
+  `).all();
+}
+
+function getPendingEstimates() {
+  return db.prepare(`
+    SELECT e.*, c.company, c.first_name, c.last_name, c.is_company
+    FROM estimates e LEFT JOIN clients c ON e.client_id = c.id
+    WHERE e.status = 'sent' ORDER BY e.created_at DESC
+  `).all();
+}
+
+function getIncomeByClient(startDate, endDate) {
+  return db.prepare(`
+    SELECT c.id, c.company, c.first_name, c.last_name, c.is_company,
+      COALESCE(SUM(p.amount), 0) as total_paid,
+      COUNT(DISTINCT i.id) as invoice_count
+    FROM clients c
+    LEFT JOIN invoices i ON i.client_id = c.id AND i.invoice_date >= ? AND i.invoice_date <= ?
+    LEFT JOIN payments p ON p.invoice_id = i.id AND p.payment_date >= ? AND p.payment_date <= ?
+    WHERE c.archived = 0
+    GROUP BY c.id HAVING total_paid > 0
+    ORDER BY total_paid DESC
+  `).all(startDate, endDate, startDate, endDate);
+}
+
+function getTaxCollected(startDate, endDate) {
+  return db.prepare(`
+    SELECT COALESCE(SUM(ili.tax_amount), 0) as total_tax, t_name as tax_name
+    FROM (
+      SELECT ili.tax_amount, ili.tax_name as t_name FROM invoice_line_items ili
+      JOIN invoices i ON ili.invoice_id = i.id
+      WHERE i.invoice_date >= ? AND i.invoice_date <= ?
+    ) GROUP BY t_name
+  `).all(startDate, endDate);
 }
 
 module.exports = {
@@ -809,4 +893,6 @@ module.exports = {
   getSettings, getSettingValue, saveSetting, saveSettings,
   // Dashboard
   getDashboardStats,
+  getAllLineItems, getUnfiledLineItems, getPendingEstimates,
+  getIncomeByClient, getTaxCollected,
 };
