@@ -109,7 +109,7 @@ async function generate(docType, docId) {
     path: pdfPath,
     format: 'A4',
     printBackground: true,
-    margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' },
+    margin: { top: '10mm', right: '12mm', bottom: '10mm', left: '12mm' },
   });
 
   await browser.close();
@@ -169,9 +169,9 @@ function renderToHtml(blocks, data) {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
-  @page { margin: 15mm; }
+  @page { margin: 10mm 12mm; }
   .page-content { flex: 0 0 auto; }
-  .page-bottom { margin-top: auto; }
+  .page-bottom { margin-top: auto; padding-top: 8px; }
 </style>
 </head>
 <body>
@@ -388,13 +388,13 @@ function footerHtml(props, data) {
 
   // Estimate: signature lines + disclosure
   if (isEstimate) {
-    html += `<div style="display:flex;gap:16px;margin:16px 0 12px;font-size:10px;">`;
+    html += `<div style="display:flex;gap:16px;margin:10px 0 8px;font-size:10px;">`;
     html += `<div style="flex:1;"><div style="margin-bottom:4px;">CLIENT SIGNATURE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `<div style="flex:1;"><div style="margin-bottom:4px;">PRINT:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:8px;color:#000;line-height:1.3;margin-bottom:8px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:7px;color:#000;line-height:1.3;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 

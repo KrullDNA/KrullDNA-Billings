@@ -24,7 +24,7 @@ export function getDefaultProps(type) {
     divider_block: { weight: 1, color: '#e5e7eb', widthPct: 100, paddingTop: 0, paddingBottom: 8 },
     spacer_block: { height: 24, paddingTop: 0, paddingBottom: 0 },
     text_block: { content: 'Custom text here', fontSize: 12, bold: false, color: '#374151', alignment: 'left', paddingTop: 0, paddingBottom: 8 },
-    footer_block: { defaultTerms: 'COD', paddingTop: 16, paddingBottom: 0 },
+    footer_block: { defaultTerms: 'COD', paddingTop: 8, paddingBottom: 0 },
   };
   return { ...defaults[type] };
 }

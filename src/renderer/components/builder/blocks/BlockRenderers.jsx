@@ -304,7 +304,7 @@ function FooterBlock({ props, data, style }) {
       {/* Estimate: signature lines + disclosure */}
       {isEstimate && (
         <>
-          <div style={{ display: 'flex', gap: 16, marginBottom: 12, marginTop: 16, fontSize: 10 }}>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 8, marginTop: 10, fontSize: 10 }}>
             <div style={{ flex: 1 }}>
               <div style={{ marginBottom: 4 }}>CLIENT SIGNATURE:</div>
               <div style={{ borderBottom: '1px solid #111', height: 20 }} />
@@ -319,7 +319,7 @@ function FooterBlock({ props, data, style }) {
             </div>
           </div>
           {settings.estimate_disclosure && (
-            <div style={{ fontSize: 8, color: '#000', lineHeight: 1.3, marginBottom: 8 }}>
+            <div style={{ fontSize: 7, color: '#000', lineHeight: 1.3, marginBottom: 6 }}>
               {settings.estimate_disclosure}
             </div>
           )}
