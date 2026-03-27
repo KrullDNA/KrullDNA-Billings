@@ -108,7 +108,7 @@ export default function Builder({ blocks, onChange, data, onSaveTemplate, onLoad
 
         {/* Centre: A4 Canvas */}
         <div className="flex-1 overflow-auto p-6 flex justify-center">
-          <div className="w-[595px] min-h-[842px] bg-white shadow-lg border border-gray-200 p-8" style={{ fontFamily: '-apple-system, sans-serif', fontSize: 12 }}>
+          <div className="w-[595px] min-h-[842px] bg-white shadow-lg border border-gray-200 p-8" style={{ fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
             <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
               {blocks.map((block) => (
                 <SortableBlock
@@ -224,7 +224,7 @@ function SortableBlock({ block, data, isSelected, onSelect, onDelete }) {
 
 export function DocumentRenderer({ blocks, data }) {
   return (
-    <div className="bg-white p-8" style={{ width: 595, fontFamily: '-apple-system, sans-serif', fontSize: 12 }}>
+    <div className="bg-white p-8" style={{ width: 595, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
       {blocks.map((block) => (
         <div key={block.id}>{renderBlock(block, data)}</div>
       ))}
