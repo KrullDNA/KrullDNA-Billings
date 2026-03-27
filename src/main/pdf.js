@@ -250,9 +250,9 @@ function clientHtml(props, data) {
 
 function docTitleHtml(props, data) {
   const title = props.titleLabel || 'DESCRIPTION';
-  return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 10px;">
+  return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 0;">
     <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">${esc(title)}</span>
-    <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">AMOUNT</span>
+    <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;width:110px;text-align:right;padding-right:12px;flex-shrink:0;">AMOUNT</span>
   </div>`;
 }
 
@@ -290,7 +290,7 @@ function lineItemsHtml(props, data) {
     // Comments/notes under description
     if (item.notes) html += `<div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5;">${esc(item.notes)}</div>`;
     html += `</div>`;
-    html += `<div style="font-size:11px;text-align:right;min-width:90px;">${fmt(item.total, currency)}</div>`;
+    html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.total, currency)}</div>`;
     html += `</div>`;
   });
 

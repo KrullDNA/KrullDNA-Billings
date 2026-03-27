@@ -89,11 +89,11 @@ function LabelRow({ label, value }) {
 function DocTitleBlock({ props, data, style }) {
   return (
     <div style={{ ...style }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#111', color: '#fff', padding: '6px 10px' }}>
-        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#111', color: '#fff', padding: '6px 0' }}>
+        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', paddingLeft: 0 }}>
           {props.titleLabel || 'DESCRIPTION'}
         </span>
-        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <span style={{ fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', width: 110, textAlign: 'right', paddingRight: 12, flexShrink: 0 }}>
           AMOUNT
         </span>
       </div>
@@ -162,7 +162,7 @@ function LineItemsBlock({ props, data, style }) {
                 <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>{item.notes}</div>
               )}
             </div>
-            <div style={{ fontSize: 11, textAlign: 'right', minWidth: 90, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontSize: 11, textAlign: 'right', width: 110, paddingRight: 12, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
               {fmt(item.total, currency)}
             </div>
           </div>
