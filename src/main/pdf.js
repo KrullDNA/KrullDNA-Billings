@@ -142,16 +142,24 @@ function renderToHtml(blocks, data) {
     </div>
   ` : '';
 
-  // Split blocks into body and footer (footer_block always goes at page bottom)
-  let mainHtml = '';
-  let footerHtml = '';
+  // Split blocks into content, totals, and footer
+  let contentHtml = '';
+  let totalsHtml = '';
+  let footerHtmlStr = '';
   for (const block of blocks) {
     if (block.type === 'footer_block') {
-      footerHtml += renderBlockToHtml(block, data);
+      footerHtmlStr += renderBlockToHtml(block, data);
+    } else if (block.type === 'totals_block') {
+      totalsHtml += renderBlockToHtml(block, data);
+    } else if (block.type === 'spacer_block') {
+      // skip spacers — the flex layout handles spacing now
     } else {
-      mainHtml += renderBlockToHtml(block, data);
+      contentHtml += renderBlockToHtml(block, data);
     }
   }
+
+  // Calculate footer height estimate for padding-bottom on body
+  const footerPadding = footerHtmlStr ? 140 : 0;
 
   return `<!DOCTYPE html>
 <html>
@@ -159,16 +167,19 @@ function renderToHtml(blocks, data) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #111827; line-height: 1.5; }
+  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #111827; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; padding-bottom: ${footerPadding}px; }
   table { border-collapse: collapse; }
   @page { margin: 15mm; }
+  .page-content { flex: 0 0 auto; }
+  .page-totals { margin-top: auto; }
   .page-footer { position: fixed; bottom: 0; left: 0; right: 0; }
 </style>
 </head>
 <body>
 ${paidStamp}
-${mainHtml}
-${footerHtml ? `<div class="page-footer">${footerHtml}</div>` : ''}
+<div class="page-content">${contentHtml}</div>
+<div class="page-totals">${totalsHtml}</div>
+${footerHtmlStr ? `<div class="page-footer">${footerHtmlStr}</div>` : ''}
 </body>
 </html>`;
 }
