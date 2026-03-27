@@ -75,7 +75,8 @@ contextBridge.exposeInMainWorld('api', {
   // PDF + Email
   generatePdf: (docType, docId) => ipcRenderer.invoke('generatePdf', docType, docId),
   sendEmail: (docType, docId, opts) => ipcRenderer.invoke('sendEmail', docType, docId, opts),
-  savePdfAs: (sourcePath, defaultFilename) => ipcRenderer.invoke('savePdfAs', sourcePath, defaultFilename),
+  savePdfAs: (sourcePath, defaultFilename, folderPath) => ipcRenderer.invoke('savePdfAs', sourcePath, defaultFilename, folderPath),
+  chooseSaveFolder: () => ipcRenderer.invoke('chooseSaveFolder'),
   printPdf: (pdfPath) => ipcRenderer.invoke('printPdf', pdfPath),
   openPdf: (pdfPath) => ipcRenderer.invoke('openPdf', pdfPath),
 

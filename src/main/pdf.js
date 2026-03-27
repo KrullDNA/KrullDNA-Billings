@@ -58,7 +58,25 @@ async function generate(docType, docId) {
     if (project) doc.project_name = project.name;
   }
 
-  const data = { settings, client, document: doc, lineItems, docType, currency, isPaid };
+  // Build filename first so we can use it in the HTML title
+  const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
+  const projectName = doc.project_name || '';
+  const docNumber = isInvoice ? doc.invoice_number : doc.estimate_number;
+  const defaultPattern = isInvoice
+    ? '%clientName% %projectName% Invoice %invNum%'
+    : '%clientName% %projectName% Estimate %estNum%';
+  const pattern = (isInvoice ? settings.invoice_filename_pattern : settings.estimate_filename_pattern) || defaultPattern;
+  const filename = pattern
+    .replace('%clientName%', clientName)
+    .replace('%projectName%', projectName)
+    .replace('%invNum%', docNumber || '')
+    .replace('%estNum%', docNumber || '')
+    .replace(/[/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() + '.pdf';
+
+  const docTitle = filename.replace('.pdf', '');
+  const data = { settings, client, document: doc, lineItems, docType, currency, isPaid, docTitle };
 
   const html = renderToHtml(blocks, data);
 
@@ -70,9 +88,7 @@ async function generate(docType, docId) {
     puppeteer = require('puppeteer');
   }
 
-  // Try to find a Chrome/Chromium executable
   const chromePath = findChrome();
-
   const browser = await puppeteer.launch({
     headless: true,
     executablePath: chromePath || undefined,
@@ -81,25 +97,6 @@ async function generate(docType, docId) {
 
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
-
-  const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
-  const projectName = doc.project_name || '';
-  const docNumber = isInvoice ? doc.invoice_number : doc.estimate_number;
-
-  // Build filename from pattern in settings
-  const defaultPattern = isInvoice
-    ? '%clientName% %projectName% Invoice %invNum%'
-    : '%clientName% %projectName% Estimate %estNum%';
-  const pattern = (isInvoice ? settings.invoice_filename_pattern : settings.estimate_filename_pattern) || defaultPattern;
-
-  const filename = pattern
-    .replace('%clientName%', clientName)
-    .replace('%projectName%', projectName)
-    .replace('%invNum%', docNumber || '')
-    .replace('%estNum%', docNumber || '')
-    .replace(/[/\\:*?"<>|]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim() + '.pdf';
 
   const tmpDir = path.join(os.tmpdir(), 'krull-billings-pdfs');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
@@ -165,6 +162,7 @@ function renderToHtml(blocks, data) {
 <html>
 <head>
 <meta charset="UTF-8">
+<title>${esc(data.docTitle || 'Document')}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }

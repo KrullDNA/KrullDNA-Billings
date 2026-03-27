@@ -144,7 +144,15 @@ function registerIpcHandlers() {
     const email = require('./email');
     return email.send(docType, docId, opts);
   });
-  ipcMain.handle('savePdfAs', async (_, sourcePath, defaultFilename) => {
+  // Auto-save PDF to a chosen folder (no dialog)
+  ipcMain.handle('savePdfAs', async (_, sourcePath, defaultFilename, folderPath) => {
+    if (folderPath && sourcePath) {
+      if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+      const dest = path.join(folderPath, defaultFilename || 'document.pdf');
+      fs.copyFileSync(sourcePath, dest);
+      return dest;
+    }
+    // Fallback: show save dialog if no folder set
     const result = await dialog.showSaveDialog(mainWindow, {
       defaultPath: defaultFilename || 'document.pdf',
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
@@ -154,6 +162,15 @@ function registerIpcHandlers() {
       return result.filePath;
     }
     return null;
+  });
+  // Choose a folder for saving PDFs
+  ipcMain.handle('chooseSaveFolder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Choose save folder',
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
   });
   ipcMain.handle('printPdf', async (_, pdfPath) => {
     if (pdfPath) {

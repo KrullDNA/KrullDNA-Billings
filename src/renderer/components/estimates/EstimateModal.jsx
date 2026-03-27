@@ -28,6 +28,8 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
   const [comments, setComments] = useState('');
 
   const [saveCopy, setSaveCopy] = useState(true);
+  const [saveFolder, setSaveFolder] = useState('');
+  const [saveFolderName, setSaveFolderName] = useState('Estimates');
   const [sendEmail, setSendEmail] = useState(false);
   const [printEstimate, setPrintEstimate] = useState(false);
 
@@ -59,6 +61,8 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
       setEstimateNumber(`${prefix}${nextNum}`);
       setEstimateDate(new Date().toISOString().slice(0, 10));
       setComments('');
+      setSaveFolder(stngs.estimate_save_folder || '');
+      setSaveFolderName(stngs.estimate_save_folder ? stngs.estimate_save_folder.split('/').pop() : 'Estimates');
     } catch (err) {
       console.error('Failed to load estimate data:', err);
     }
@@ -95,7 +99,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
       try {
         const result = await window.api.generatePdf('estimate', estimateId);
         if (result?.path) {
-          if (saveCopy) await window.api.savePdfAs(result.path, result.filename);
+          if (saveCopy) await window.api.savePdfAs(result.path, result.filename, saveFolder);
           if (sendEmail) await window.api.sendEmail('estimate', estimateId);
           if (printEstimate) await window.api.printPdf(result.path);
         }
@@ -172,9 +176,16 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
                       <input type="checkbox" checked={saveCopy} onChange={(e) => setSaveCopy(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
                       <div className="flex-1">
                         <span className="text-sm text-gray-600">Save a copy</span>
-                        <p className="text-xs text-gray-400">"Estimates"</p>
+                        <p className="text-xs text-gray-400">"{saveFolderName}"</p>
                       </div>
-                      <button onClick={() => window.api.savePdfAs(null, null)} className="px-3 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Choose...</button>
+                      <button onClick={async () => {
+                        const folder = await window.api.chooseSaveFolder();
+                        if (folder) {
+                          setSaveFolder(folder);
+                          setSaveFolderName(folder.split('/').pop());
+                          await window.api.saveSetting('estimate_save_folder', folder);
+                        }
+                      }} className="px-3 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Choose...</button>
                     </div>
                     <div className="flex items-start gap-2">
                       <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
