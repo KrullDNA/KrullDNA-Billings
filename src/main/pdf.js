@@ -158,7 +158,7 @@ function renderBlockToHtml(block, data) {
     case 'notes_block': return wrap(notesHtml(props, data));
     case 'divider_block': return wrap(dividerHtml(props));
     case 'spacer_block': return `<div style="height:${props.height || 24}px;"></div>`;
-    case 'text_block': return wrap(textHtml(props));
+    case 'text_block': return wrap(textHtml(props, data));
     default: return '';
   }
 }
@@ -237,21 +237,30 @@ function lineItemsHtml(props, data) {
     grouped[cat].push(item);
   }
 
-  let html = '';
-  catOrder.forEach((cat, catIdx) => {
-    // Divider between groups
-    if (catIdx > 0) html += `<hr style="border:none;border-top:1px solid #111;margin:16px 0;" />`;
-
+  // Flatten all items with category info
+  const allItems = [];
+  for (const cat of catOrder) {
     grouped[cat].forEach((item, idx) => {
-      html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;">`;
-      html += `<div style="flex:1;">`;
-      // Category as bold header on first item of group
-      if (cat && idx === 0) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.02em;">${esc(cat)}</div>`;
-      html += `<div style="font-size:11px;color:#374151;">${esc(item.name)}</div>`;
-      html += `</div>`;
-      html += `<div style="font-size:11px;text-align:right;min-width:90px;">${fmt(item.total, currency)}</div>`;
-      html += `</div>`;
+      allItems.push({ ...item, _cat: cat, _isFirstInCat: idx === 0 });
     });
+  }
+
+  let html = '';
+  allItems.forEach((item, i) => {
+    // Divider: black for new category group, light grey between items within a group
+    if (i > 0) {
+      const divColor = item._isFirstInCat && item._cat ? '#111' : '#e5e7eb';
+      html += `<hr style="border:none;border-top:1px solid ${divColor};margin:12px 0;" />`;
+    }
+    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;">`;
+    html += `<div style="flex:1;padding-right:16px;">`;
+    if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
+    html += `<div style="font-size:11px;color:#374151;">${esc(item.name)}</div>`;
+    // Comments/notes under description
+    if (item.notes) html += `<div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5;">${esc(item.notes)}</div>`;
+    html += `</div>`;
+    html += `<div style="font-size:11px;text-align:right;min-width:90px;">${fmt(item.total, currency)}</div>`;
+    html += `</div>`;
   });
 
   if (items.length === 0) html += `<div style="padding:16px 0;text-align:center;color:#9ca3af;font-size:11px;">No line items</div>`;
@@ -310,7 +319,26 @@ function dividerHtml(props) {
   return `<hr style="border:none;border-top:${props.weight || 1}px solid ${props.color || '#111'};width:${props.widthPct || 100}%;margin:0;" />`;
 }
 
-function textHtml(props) {
+function textHtml(props, data) {
+  const s = (data && data.settings) || {};
+
+  // Auto-generate business footer if content is empty
+  if (!props.content && s.business_name) {
+    let line1 = `<strong>${esc(s.business_name)}</strong>`;
+    if (s.abn) line1 += ` &bull; <strong>ABN</strong>: ${esc(s.abn)}`;
+
+    const addrParts = [s.address_street, [s.address_city, s.address_state, s.address_postcode].filter(Boolean).join(', '), s.address_country].filter(Boolean);
+    const addrLine = addrParts.length ? `<div>${esc(addrParts.join(', '))}</div>` : '';
+
+    const contactParts = [];
+    if (s.phone) contactParts.push(`<strong>T:</strong> ${esc(s.phone)}`);
+    if (s.email) contactParts.push(`<strong>E:</strong> ${esc(s.email)}`);
+    if (s.website) contactParts.push(`<strong>W:</strong> ${esc(s.website)}`);
+    const contactLine = contactParts.length ? `<div>${contactParts.join('&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;')}</div>` : '';
+
+    return `<div style="font-size:${props.fontSize || 9}px;color:#374151;">${line1}${addrLine}${contactLine}</div>`;
+  }
+
   return `<div style="font-size:${props.fontSize || 10}px;color:${props.color || '#374151'};text-align:${props.alignment || 'left'};font-weight:${props.bold ? 'bold' : 'normal'};">${esc(props.content || '')}</div>`;
 }
 

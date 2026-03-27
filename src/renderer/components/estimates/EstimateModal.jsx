@@ -167,15 +167,22 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
 
                 <div className="border-t border-gray-100 pt-4">
                   <p className="text-xs font-medium text-gray-500 mb-2">Delivery Options</p>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                      <input type="checkbox" checked={saveCopy} onChange={(e) => setSaveCopy(e.target.checked)} className="rounded border-gray-300 text-brand-600" />
-                      Save a copy
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                      <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="rounded border-gray-300 text-brand-600" />
-                      Send an Email
-                    </label>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <input type="checkbox" checked={saveCopy} onChange={(e) => setSaveCopy(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-600">Save a copy</span>
+                        <p className="text-xs text-gray-400">"Estimates"</p>
+                      </div>
+                      <button onClick={() => window.api.savePdfAs(null, null)} className="px-3 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Choose...</button>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-600">Send an Email</span>
+                        <p className="text-xs text-gray-400">Mail will be opened.</p>
+                      </div>
+                    </div>
                     <label className="flex items-center gap-2 text-sm text-gray-600">
                       <input type="checkbox" checked={printEstimate} onChange={(e) => setPrintEstimate(e.target.checked)} className="rounded border-gray-300 text-brand-600" />
                       Print
