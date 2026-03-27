@@ -109,7 +109,7 @@ async function generate(docType, docId) {
     path: pdfPath,
     format: 'A4',
     printBackground: true,
-    margin: { top: '10mm', right: '12mm', bottom: '10mm', left: '12mm' },
+    margin: { top: '0', right: '0', bottom: '0', left: '0' },
   });
 
   await browser.close();
@@ -142,8 +142,9 @@ function renderToHtml(blocks, data) {
     </div>
   ` : '';
 
-  // Split blocks into content, totals, and footer
-  let contentHtml = '';
+  // Split blocks into header (above table), body (table content), totals, footer
+  let headerHtml = '';
+  let bodyHtml = '';
   let totalsHtml = '';
   let footerHtmlStr = '';
   for (const block of blocks) {
@@ -152,14 +153,13 @@ function renderToHtml(blocks, data) {
     } else if (block.type === 'totals_block') {
       totalsHtml += renderBlockToHtml(block, data);
     } else if (block.type === 'spacer_block') {
-      // skip spacers — the flex layout handles spacing now
+      // skip spacers
+    } else if (block.type === 'header_block') {
+      headerHtml += renderBlockToHtml(block, data);
     } else {
-      contentHtml += renderBlockToHtml(block, data);
+      bodyHtml += renderBlockToHtml(block, data);
     }
   }
-
-  // Calculate footer height estimate for padding-bottom on body
-  const footerPadding = footerHtmlStr ? 140 : 0;
 
   return `<!DOCTYPE html>
 <html>
@@ -169,14 +169,16 @@ function renderToHtml(blocks, data) {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
-  @page { margin: 10mm 12mm; }
-  .page-content { flex: 0 0 auto; }
-  .page-bottom { margin-top: auto; padding-top: 8px; }
+  @page { margin: 0; }
+  .page-header { padding: 50px 40px 20px 40px; }
+  .page-content { flex: 0 0 auto; padding: 0 40px; }
+  .page-bottom { margin-top: auto; padding: 20px 40px 50px 40px; }
 </style>
 </head>
 <body>
 ${paidStamp}
-<div class="page-content">${contentHtml}</div>
+<div class="page-header">${headerHtml}</div>
+<div class="page-content">${bodyHtml}</div>
 <div class="page-bottom">${totalsHtml}${footerHtmlStr}</div>
 </body>
 </html>`;
@@ -394,7 +396,7 @@ function footerHtml(props, data) {
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:7px;color:#000;line-height:1.3;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:7px;color:#000;line-height:1.2;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 
