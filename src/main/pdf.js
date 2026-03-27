@@ -170,9 +170,9 @@ function renderToHtml(blocks, data) {
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 0; }
-  .page-header { padding: 50px 40px 20px 40px; }
-  .page-content { flex: 0 0 auto; padding: 0 40px; }
-  .page-bottom { margin-top: auto; padding: 20px 40px 50px 40px; }
+  .page-header { padding: 20px 30px 10px 30px; }
+  .page-content { flex: 0 0 auto; padding: 0 30px; }
+  .page-bottom { margin-top: auto; padding: 10px 30px 20px 30px; }
 </style>
 </head>
 <body>
