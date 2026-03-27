@@ -69,6 +69,7 @@ function registerIpcHandlers() {
   // Clients
   ipcMain.handle('getClients', (_, groupId) => db.getClients(groupId));
   ipcMain.handle('getClient', (_, id) => db.getClient(id));
+  ipcMain.handle('getClientSummary', (_, id) => db.getClientSummary(id));
   ipcMain.handle('createClient', (_, data) => db.createClient(data));
   ipcMain.handle('updateClient', (_, id, data) => db.updateClient(id, data));
   ipcMain.handle('archiveClient', (_, id) => db.archiveClient(id));

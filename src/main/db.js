@@ -327,6 +327,13 @@ function archiveClient(id) {
   db.prepare('UPDATE clients SET archived = 1, updated_at = datetime(\'now\') WHERE id = ?').run(id);
 }
 
+function getClientSummary(clientId) {
+  const overdue = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM invoices WHERE client_id = ? AND status = 'overdue'").get(clientId).t;
+  const totalBilled = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM invoices WHERE client_id = ? AND status != 'cancelled'").get(clientId).t;
+  const totalPaid = db.prepare('SELECT COALESCE(SUM(amount), 0) as t FROM payments WHERE client_id = ?').get(clientId).t;
+  return { overdue, totalBilled, totalPaid, balance: totalBilled - totalPaid };
+}
+
 function moveClientToGroup(clientId, groupId) {
   db.prepare('UPDATE clients SET group_id = ?, updated_at = datetime(\'now\') WHERE id = ?').run(groupId, clientId);
 }
@@ -334,7 +341,17 @@ function moveClientToGroup(clientId, groupId) {
 // ── Projects ──
 
 function getProjects(clientId) {
-  return db.prepare("SELECT * FROM projects WHERE client_id = ? AND status != 'archived' ORDER BY created_at DESC").all(clientId);
+  return db.prepare(`
+    SELECT p.*,
+      COALESCE(SUM(CASE WHEN li.status = 'unbilled' THEN li.total ELSE 0 END), 0) as unbilled_total,
+      COALESCE(SUM(li.total), 0) as line_items_total,
+      COALESCE(SUM(li.duration_seconds), 0) as total_duration
+    FROM projects p
+    LEFT JOIN line_items li ON li.project_id = p.id
+    WHERE p.client_id = ? AND p.status != 'archived'
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+  `).all(clientId);
 }
 
 function getProject(id) {
@@ -727,7 +744,7 @@ module.exports = {
   // Client Groups
   getClientGroups, saveClientGroup, deleteClientGroup, reorderClientGroups,
   // Clients
-  getClients, getClient, createClient, updateClient, archiveClient, moveClientToGroup,
+  getClients, getClient, getClientSummary, createClient, updateClient, archiveClient, moveClientToGroup,
   // Projects
   getProjects, getProject, createProject, updateProject, archiveProject,
   // Line Items
