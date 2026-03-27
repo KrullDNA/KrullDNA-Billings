@@ -33,7 +33,7 @@ function statusBadge(status) {
   return styles[status] || 'bg-gray-100 text-gray-600';
 }
 
-export default function ClientView({ client }) {
+export default function ClientView({ client, newProjectRequested }) {
   const [activeTab, setActiveTab] = useState('projects');
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -44,6 +44,14 @@ export default function ClientView({ client }) {
   // Modals
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+
+  // Open project form when toolbar "New Project" is clicked
+  useEffect(() => {
+    if (newProjectRequested) {
+      setEditingProject(null);
+      setProjectFormOpen(true);
+    }
+  }, [newProjectRequested]);
   const [lineItemFormOpen, setLineItemFormOpen] = useState(false);
   const [editingLineItem, setEditingLineItem] = useState(null);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);

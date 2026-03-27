@@ -21,6 +21,9 @@ export default function App() {
   const [editingClient, setEditingClient] = useState(null);
   const [defaultGroupId, setDefaultGroupId] = useState(null);
 
+  // New project trigger (increments to signal ClientView)
+  const [newProjectTrigger, setNewProjectTrigger] = useState(0);
+
   const loadClientGroups = useCallback(async () => {
     try {
       const groups = await window.api.getClientGroups();
@@ -80,7 +83,7 @@ export default function App() {
   function renderContent() {
     switch (view) {
       case 'client':
-        return selectedClient ? <ClientView client={selectedClient} /> : <EmptyState />;
+        return selectedClient ? <ClientView client={selectedClient} newProjectRequested={newProjectTrigger} /> : <EmptyState />;
       case 'settings':
         return <SettingsPanel />;
       case 'dashboard':
@@ -116,7 +119,7 @@ export default function App() {
           <Toolbar
             view={view}
             selectedClient={selectedClient}
-            onNewProject={() => { if (selectedClient) setView('client'); }}
+            onNewProject={() => { if (selectedClient) { setView('client'); setNewProjectTrigger((n) => n + 1); } }}
             onEditClient={() => { if (selectedClient) handleEditClient(selectedClient); }}
             onNewClient={() => handleAddClient(null)}
           />
