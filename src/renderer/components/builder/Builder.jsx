@@ -254,7 +254,7 @@ export function DocumentRenderer({ blocks, data }) {
   return (
     <div className="bg-white flex flex-col" style={{ width: 595, minHeight: 842, fontFamily: "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: 11 }}>
       {/* Header */}
-      <div style={{ padding: '20px 30px 0 30px' }}>
+      <div style={{ padding: '30px 30px 20px 30px' }}>
         {headerBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}
@@ -266,7 +266,7 @@ export function DocumentRenderer({ blocks, data }) {
         ))}
       </div>
       {/* Totals + Footer */}
-      <div className="mt-auto" style={{ padding: '0 30px 20px 30px' }}>
+      <div className="mt-auto" style={{ padding: '0 30px 30px 30px' }}>
         {totalsBlocks.map((block) => (
           <div key={block.id}>{renderBlock(block, data)}</div>
         ))}

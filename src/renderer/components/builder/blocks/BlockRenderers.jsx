@@ -18,18 +18,19 @@ const FONT = "'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'He
 export function renderBlock(block, data) {
   const { type, props } = block;
   const style = { paddingTop: props.paddingTop || 0, paddingBottom: props.paddingBottom || 0, fontFamily: FONT, color: '#000' };
+  const tight = { fontFamily: FONT, color: '#000' }; // no padding — layout controls spacing
 
   switch (type) {
-    case 'header_block': return <HeaderBlock props={props} data={data} style={style} />;
+    case 'header_block': return <HeaderBlock props={props} data={data} style={tight} />;
     case 'client_block': return <ClientBlock props={props} data={data} style={style} />;
-    case 'doc_title_block': return <DocTitleBlock props={props} data={data} style={style} />;
-    case 'line_items_block': return <LineItemsBlock props={props} data={data} style={style} />;
-    case 'totals_block': return <TotalsBlock props={props} data={data} style={style} />;
+    case 'doc_title_block': return <DocTitleBlock props={props} data={data} style={tight} />;
+    case 'line_items_block': return <LineItemsBlock props={props} data={data} style={tight} />;
+    case 'totals_block': return <TotalsBlock props={props} data={data} style={tight} />;
     case 'notes_block': return <NotesBlock props={props} data={data} style={style} />;
     case 'divider_block': return <DividerBlock props={props} style={style} />;
     case 'spacer_block': return <SpacerBlock props={props} />;
     case 'text_block': return <TextBlock props={props} data={data} style={style} />;
-    case 'footer_block': return <FooterBlock props={props} data={data} style={style} />;
+    case 'footer_block': return <FooterBlock props={props} data={data} style={tight} />;
     default: return <div style={style} className="text-xs text-red-400">Unknown block: {type}</div>;
   }
 }
