@@ -250,7 +250,7 @@ function clientHtml(props, data) {
 
 function docTitleHtml(props, data) {
   const title = props.titleLabel || 'DESCRIPTION';
-  return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 0;">
+  return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 8px;">
     <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">${esc(title)}</span>
     <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;width:110px;text-align:right;padding-right:12px;flex-shrink:0;">AMOUNT</span>
   </div>`;
@@ -281,14 +281,13 @@ function lineItemsHtml(props, data) {
     // Divider: black for new category group, light grey between items within a group
     if (i > 0) {
       const divColor = item._isFirstInCat && item._cat ? '#111' : '#e5e7eb';
-      html += `<hr style="border:none;border-top:1px solid ${divColor};margin:12px 0;" />`;
+      html += `<hr style="border:none;border-top:1px solid ${divColor};margin:8px 0;" />`;
     }
-    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;">`;
+    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;">`;
     html += `<div style="flex:1;padding-right:16px;">`;
-    if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
+    if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
     html += `<div style="font-size:11px;color:#374151;">${esc(item.name)}</div>`;
-    // Comments/notes under description
-    if (item.notes) html += `<div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5;">${esc(item.notes)}</div>`;
+    if (item.notes) html += `<div style="font-size:9px;color:#6b7280;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
     html += `</div>`;
     html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.total, currency)}</div>`;
     html += `</div>`;
@@ -386,18 +385,18 @@ function footerHtml(props, data) {
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:8px;color:#374151;line-height:1.4;margin-bottom:12px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:8px;color:#374151;line-height:1.3;margin-bottom:8px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 
   // Invoice: terms + banking
   if (!isEstimate) {
     const terms = doc.terms || props.defaultTerms;
-    if (terms) html += `<div style="margin-bottom:12px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
+    if (terms) html += `<div style="margin-bottom:6px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
 
     if (s.bank_name) {
-      html += `<div style="margin-bottom:16px;font-size:10px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
-      html += `<table style="font-size:10px;border-collapse:collapse;">`;
+      html += `<div style="margin-bottom:8px;font-size:10px;"><div style="font-weight:700;margin-bottom:0;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+      html += `<table style="font-size:10px;border-collapse:collapse;line-height:1.3;">`;
       if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
       if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
       if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
