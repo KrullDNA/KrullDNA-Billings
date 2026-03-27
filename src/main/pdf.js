@@ -167,19 +167,17 @@ function renderToHtml(blocks, data) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #111827; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; padding-bottom: ${footerPadding}px; }
+  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 15mm; }
   .page-content { flex: 0 0 auto; }
-  .page-totals { margin-top: auto; }
-  .page-footer { position: fixed; bottom: 0; left: 0; right: 0; }
+  .page-bottom { margin-top: auto; }
 </style>
 </head>
 <body>
 ${paidStamp}
 <div class="page-content">${contentHtml}</div>
-<div class="page-totals">${totalsHtml}</div>
-${footerHtmlStr ? `<div class="page-footer">${footerHtmlStr}</div>` : ''}
+<div class="page-bottom">${totalsHtml}${footerHtmlStr}</div>
 </body>
 </html>`;
 }
@@ -241,21 +239,21 @@ function headerHtml(props, data) {
 }
 
 function labelRow(label, value) {
-  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:8px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.3;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.3;">${value}</td></tr>`;
+  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:6px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.15;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.15;">${value}</td></tr>`;
 }
 
 function clientHtml(props, data) {
   const c = data.client || {};
   const contactName = [c.first_name, c.last_name].filter(Boolean).join(' ');
   const fs2 = props.fontSize || 11;
-  let html = `<div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:3px;letter-spacing:0.02em;">${esc(props.sectionLabel || 'BILL TO')}</div>`;
+  let html = `<div style="font-size:9px;font-weight:700;color:#333;text-transform:uppercase;margin-bottom:3px;letter-spacing:0.02em;">${esc(props.sectionLabel || 'BILL TO')}</div>`;
   if (c.company) html += `<div style="font-size:${fs2}px;font-weight:500;">${esc(c.company)}</div>`;
-  if (contactName) html += `<div style="font-size:${c.company ? fs2 - 1 : fs2}px;${c.company ? 'color:#4b5563;' : 'font-weight:500;'}">${esc(contactName)}</div>`;
-  if (c.address_street) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(c.address_street)}</div>`;
+  if (contactName) html += `<div style="font-size:${c.company ? fs2 - 1 : fs2}px;${c.company ? 'color:#000;' : 'font-weight:500;'}">${esc(contactName)}</div>`;
+  if (c.address_street) html += `<div style="font-size:${fs2 - 1}px;color:#000;">${esc(c.address_street)}</div>`;
   const cityLine = [c.address_city, c.address_state, c.address_postcode].filter(Boolean).join(', ');
-  if (cityLine) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(cityLine)}</div>`;
-  if (props.showEmail && c.email) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(c.email)}</div>`;
-  if (props.showPhone && c.phone) html += `<div style="font-size:${fs2 - 1}px;color:#4b5563;">${esc(c.phone)}</div>`;
+  if (cityLine) html += `<div style="font-size:${fs2 - 1}px;color:#000;">${esc(cityLine)}</div>`;
+  if (props.showEmail && c.email) html += `<div style="font-size:${fs2 - 1}px;color:#000;">${esc(c.email)}</div>`;
+  if (props.showPhone && c.phone) html += `<div style="font-size:${fs2 - 1}px;color:#000;">${esc(c.phone)}</div>`;
   return html;
 }
 
@@ -297,8 +295,8 @@ function lineItemsHtml(props, data) {
     html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;">`;
     html += `<div style="flex:1;padding-right:16px;">`;
     if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
-    html += `<div style="font-size:11px;color:#374151;">${esc(item.name)}</div>`;
-    if (item.notes) html += `<div style="font-size:9px;color:#6b7280;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
+    html += `<div style="font-size:11px;color:#000;">${esc(item.name)}</div>`;
+    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
     html += `</div>`;
     html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.total, currency)}</div>`;
     html += `</div>`;
@@ -327,7 +325,7 @@ function totalsHtml(props, data) {
 }
 
 function totalsRowHtml(label, value) {
-  return `<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:right;padding:5px 12px;color:#374151;font-size:11px;">${label}</td><td style="text-align:right;padding:5px 12px 5px 0;font-size:11px;width:110px;">${value}</td></tr>`;
+  return `<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:right;padding:5px 12px;color:#000;font-size:11px;">${label}</td><td style="text-align:right;padding:5px 12px 5px 0;font-size:11px;width:110px;">${value}</td></tr>`;
 }
 
 function notesHtml(props, data) {
@@ -351,7 +349,7 @@ function notesHtml(props, data) {
     html += `</table></div>`;
   }
 
-  if (notes) html += `<div style="color:#4b5563;white-space:pre-wrap;font-size:10px;">${esc(notes)}</div>`;
+  if (notes) html += `<div style="color:#000;white-space:pre-wrap;font-size:10px;">${esc(notes)}</div>`;
   return html;
 }
 
@@ -376,7 +374,7 @@ function textHtml(props, data) {
     if (s.website) contactParts.push(`<strong>W:</strong> ${esc(s.website)}`);
     const contactLine = contactParts.length ? `<div>${contactParts.join('&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;')}</div>` : '';
 
-    return `<div style="font-size:${props.fontSize || 9}px;color:#374151;">${line1}${addrLine}${contactLine}</div>`;
+    return `<div style="font-size:${props.fontSize || 9}px;color:#000;">${line1}${addrLine}${contactLine}</div>`;
   }
 
   return `<div style="font-size:${props.fontSize || 10}px;color:${props.color || '#374151'};text-align:${props.alignment || 'left'};font-weight:${props.bold ? 'bold' : 'normal'};">${esc(props.content || '')}</div>`;
@@ -396,18 +394,18 @@ function footerHtml(props, data) {
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:8px;color:#374151;line-height:1.3;margin-bottom:8px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:8px;color:#000;line-height:1.3;margin-bottom:8px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 
   // Invoice: terms + banking
   if (!isEstimate) {
     const terms = doc.terms || props.defaultTerms;
-    if (terms) html += `<div style="margin-bottom:6px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
+    if (terms) html += `<div style="margin-bottom:4px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
 
     if (s.bank_name) {
-      html += `<div style="margin-bottom:8px;font-size:10px;"><div style="font-weight:700;margin-bottom:0;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
-      html += `<table style="font-size:10px;border-collapse:collapse;line-height:1.3;">`;
+      html += `<div style="margin-bottom:6px;font-size:10px;"><div style="font-weight:700;margin-bottom:0;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+      html += `<table style="font-size:10px;border-collapse:collapse;line-height:1.15;">`;
       if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
       if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
       if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
