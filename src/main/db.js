@@ -573,7 +573,19 @@ function updateInvoiceStatus(id, status) {
 
 function deleteInvoice(id) {
   db.prepare('DELETE FROM invoice_line_items WHERE invoice_id = ?').run(id);
+  db.prepare('DELETE FROM payments WHERE invoice_id = ?').run(id);
   db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
+}
+
+function deleteInvoiceAndRestore(id) {
+  const lineItemIds = db.prepare('SELECT line_item_id FROM invoice_line_items WHERE invoice_id = ? AND line_item_id IS NOT NULL').all(id).map(r => r.line_item_id);
+  db.prepare('DELETE FROM invoice_line_items WHERE invoice_id = ?').run(id);
+  db.prepare('DELETE FROM payments WHERE invoice_id = ?').run(id);
+  db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
+  if (lineItemIds.length > 0) {
+    const placeholders = lineItemIds.map(() => '?').join(',');
+    db.prepare(`UPDATE line_items SET status = 'unbilled' WHERE id IN (${placeholders})`).run(...lineItemIds);
+  }
 }
 
 function convertEstimateToInvoice(estimateId) {
@@ -666,6 +678,16 @@ function updateEstimateStatus(id, status) {
 function deleteEstimate(id) {
   db.prepare('DELETE FROM estimate_line_items WHERE estimate_id = ?').run(id);
   db.prepare('DELETE FROM estimates WHERE id = ?').run(id);
+}
+
+function deleteEstimateAndRestore(id) {
+  const lineItemIds = db.prepare('SELECT line_item_id FROM estimate_line_items WHERE estimate_id = ? AND line_item_id IS NOT NULL').all(id).map(r => r.line_item_id);
+  db.prepare('DELETE FROM estimate_line_items WHERE estimate_id = ?').run(id);
+  db.prepare('DELETE FROM estimates WHERE id = ?').run(id);
+  if (lineItemIds.length > 0) {
+    const placeholders = lineItemIds.map(() => '?').join(',');
+    db.prepare(`UPDATE line_items SET status = 'unbilled' WHERE id IN (${placeholders})`).run(...lineItemIds);
+  }
 }
 
 // ── Payments ──
@@ -877,9 +899,9 @@ module.exports = {
   // Taxes
   getTaxes, saveTax, deleteTax, setDefaultTax,
   // Invoices
-  getInvoices, getInvoice, createInvoice, updateInvoice, updateInvoiceStatus, deleteInvoice, convertEstimateToInvoice,
+  getInvoices, getInvoice, createInvoice, updateInvoice, updateInvoiceStatus, deleteInvoice, deleteInvoiceAndRestore, convertEstimateToInvoice,
   // Estimates
-  getEstimates, getEstimate, createEstimate, updateEstimate, updateEstimateStatus, deleteEstimate,
+  getEstimates, getEstimate, createEstimate, updateEstimate, updateEstimateStatus, deleteEstimate, deleteEstimateAndRestore,
   // Payments
   getPayments, addPayment, getPaymentReceipt,
   // Templates

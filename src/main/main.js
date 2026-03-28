@@ -113,6 +113,7 @@ function registerIpcHandlers() {
   ipcMain.handle('updateInvoice', (_, id, data) => db.updateInvoice(id, data));
   ipcMain.handle('updateInvoiceStatus', (_, id, status) => db.updateInvoiceStatus(id, status));
   ipcMain.handle('deleteInvoice', (_, id) => db.deleteInvoice(id));
+  ipcMain.handle('deleteInvoiceAndRestore', (_, id) => db.deleteInvoiceAndRestore(id));
   ipcMain.handle('convertEstimateToInvoice', (_, estimateId) => db.convertEstimateToInvoice(estimateId));
 
   // Estimates
@@ -122,6 +123,7 @@ function registerIpcHandlers() {
   ipcMain.handle('updateEstimate', (_, id, data) => db.updateEstimate(id, data));
   ipcMain.handle('updateEstimateStatus', (_, id, status) => db.updateEstimateStatus(id, status));
   ipcMain.handle('deleteEstimate', (_, id) => db.deleteEstimate(id));
+  ipcMain.handle('deleteEstimateAndRestore', (_, id) => db.deleteEstimateAndRestore(id));
 
   // Payments
   ipcMain.handle('getPayments', (_, clientId) => db.getPayments(clientId));
