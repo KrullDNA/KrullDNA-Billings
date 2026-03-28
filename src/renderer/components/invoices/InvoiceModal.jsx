@@ -39,6 +39,8 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
 
   // Delivery options
   const [saveCopy, setSaveCopy] = useState(true);
+  const [saveFolder, setSaveFolder] = useState('');
+  const [saveFolderName, setSaveFolderName] = useState('Invoices');
   const [sendEmail, setSendEmail] = useState(false);
   const [printInvoice, setPrintInvoice] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
@@ -77,6 +79,8 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
       setApplyRetainer(false);
       setComments('');
       setSaveCopy(true);
+      setSaveFolder(stngs.invoice_save_folder || '');
+      setSaveFolderName(stngs.invoice_save_folder ? stngs.invoice_save_folder.split('/').pop() : 'Invoices');
       setSendEmail(false);
       setPrintInvoice(false);
       setOpenPreview(false);
@@ -121,7 +125,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
       try {
         const result = await window.api.generatePdf('invoice', invoiceId);
         if (result?.path) {
-          if (saveCopy) await window.api.savePdfAs(result.path, result.filename);
+          if (saveCopy) await window.api.savePdfAs(result.path, result.filename, saveFolder);
           if (sendEmail) await window.api.sendEmail('invoice', invoiceId);
           if (printInvoice) await window.api.printPdf(result.path);
           if (openPreview) await window.api.openPdf(result.path);
@@ -236,9 +240,16 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
                       <input type="checkbox" checked={saveCopy} onChange={(e) => setSaveCopy(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
                       <div className="flex-1">
                         <span className="text-sm text-gray-600">Save a copy</span>
-                        <p className="text-xs text-gray-400">"Invoices"</p>
+                        <p className="text-xs text-gray-400">"{saveFolderName}"</p>
                       </div>
-                      <button onClick={() => window.api.savePdfAs(null, null)} className="px-3 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Choose...</button>
+                      <button onClick={async () => {
+                        const folder = await window.api.chooseSaveFolder();
+                        if (folder) {
+                          setSaveFolder(folder);
+                          setSaveFolderName(folder.split('/').pop());
+                          await window.api.saveSetting('invoice_save_folder', folder);
+                        }
+                      }} className="px-3 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Choose...</button>
                     </div>
                     <div className="flex items-start gap-2">
                       <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="rounded border-gray-300 text-brand-600 mt-0.5" />
