@@ -371,9 +371,11 @@ function AccountTab({ client, currency, onRefresh }) {
                   </span>
                   <span className="font-medium truncate">{tx.number}</span>
                 </div>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(tx.status)}`}>
-                  {tx.status?.toUpperCase()}
-                </span>
+                {!(tx.type === 'estimate' && tx.status === 'draft') && (
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(tx.status)}`}>
+                    {tx.status?.toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
@@ -458,114 +460,40 @@ function PaymentDetail({ data, currency, onShowReceipt }) {
 function DocumentDetail({ item, currency, settings, onAddPayment }) {
   const { type, data } = item;
   const isInvoice = type === 'invoice';
-  const [lineItems, setLineItems] = useState([]);
+  const [pdfHtml, setPdfHtml] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    async function loadItems() {
+    async function loadPreview() {
       try {
-        const doc = isInvoice ? await window.api.getInvoice(data.id) : await window.api.getEstimate(data.id);
-        if (!cancelled) setLineItems(doc?.lineItems || []);
+        const html = await window.api.generatePdfHtml(type, data.id);
+        if (!cancelled) setPdfHtml(html);
       } catch (err) { console.error(err); }
     }
-    loadItems();
+    loadPreview();
     return () => { cancelled = true; };
   }, [data.id, type]);
 
-  // Group by category
-  const grouped = {};
-  for (const li of lineItems) {
-    const cat = li.category_name || 'Uncategorised';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(li);
-  }
-
-  const isPaid = isInvoice && data.status === 'paid';
-
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 max-w-[595px] mx-auto text-sm relative">
-        {/* PAID IN FULL stamp */}
-        {isPaid && (
-          <div className="absolute top-12 right-8 w-40 h-40 flex items-center justify-center pointer-events-none" style={{ transform: 'rotate(-18deg)' }}>
-            <div className="border-4 border-red-500 rounded-full w-36 h-36 flex items-center justify-center">
-              <span className="text-red-500 font-bold text-lg text-center leading-tight">PAID<br />IN FULL</span>
-            </div>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{settings.business_name || 'Krull D+A'}</h1>
-            {settings.abn && <p className="text-xs text-gray-500">ABN: {settings.abn}</p>}
-          </div>
-          <div className="text-right">
-            <h2 className="text-lg font-bold text-gray-400 uppercase">{isInvoice ? 'Invoice' : 'Estimate'}</h2>
-            <p className="text-sm font-medium">{isInvoice ? data.invoice_number : data.estimate_number}</p>
-            <p className={`text-[10px] font-medium mt-1 px-2 py-0.5 rounded inline-block ${statusBadge(data.status)}`}>{data.status?.toUpperCase()}</p>
-          </div>
-        </div>
-
-        {/* Dates */}
-        <div className="text-right text-xs text-gray-500 space-y-1 mb-6">
-          <p>Date: <span className="text-gray-800">{isInvoice ? data.invoice_date : data.estimate_date}</span></p>
-          {isInvoice && data.due_date && <p>Due: <span className="text-gray-800">{data.due_date}</span></p>}
-          {isInvoice && data.terms && <p>Terms: <span className="text-gray-800">{data.terms}</span></p>}
-          {!isInvoice && data.expiry_date && <p>Expires: <span className="text-gray-800">{data.expiry_date}</span></p>}
-        </div>
-
-        {/* Line items grouped by category */}
-        <table className="w-full text-xs mb-6">
-          <thead>
-            <tr className="border-b border-gray-300">
-              <th className="text-left py-2 font-medium text-gray-500">Description</th>
-              <th className="text-right py-2 font-medium text-gray-500 w-16">Qty</th>
-              <th className="text-right py-2 font-medium text-gray-500 w-20">Rate</th>
-              <th className="text-right py-2 font-medium text-gray-500 w-20">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(grouped).map(([category, items]) => (
-              <React.Fragment key={category}>
-                <tr><td colSpan={4} className="pt-3 pb-1 font-bold text-gray-800 uppercase text-[11px]">{category}</td></tr>
-                {items.map((li) => (
-                  <tr key={li.id} className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-700">{li.name}</td>
-                    <td className="py-1.5 text-right tabular-nums text-gray-600">{li.quantity}</td>
-                    <td className="py-1.5 text-right tabular-nums text-gray-600">{formatCurrency(li.rate, currency)}</td>
-                    <td className="py-1.5 text-right tabular-nums font-medium">{formatCurrency(li.total, currency)}</td>
-                  </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-48 space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-gray-500">SUBTOTAL</span><span className="tabular-nums">{formatCurrency(data.subtotal, currency)}</span></div>
-            {(data.tax_total || 0) > 0 && <div className="flex justify-between"><span className="text-gray-500">GST 10%</span><span className="tabular-nums">{formatCurrency(data.tax_total, currency)}</span></div>}
-            {(data.retainer_applied || 0) > 0 && <div className="flex justify-between text-green-600"><span>Retainer</span><span className="tabular-nums">-{formatCurrency(data.retainer_applied, currency)}</span></div>}
-            <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-300"><span>TOTAL</span><span className="tabular-nums">{formatCurrency(data.total, currency)}</span></div>
-          </div>
-        </div>
-
-        {/* Terms */}
-        {isInvoice && data.terms && (
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <p className="text-[10px] text-gray-400">TERMS: Payment due within {data.terms.toLowerCase()}.</p>
-          </div>
-        )}
-
-        {/* Action button */}
-        {isInvoice && data.status !== 'paid' && data.status !== 'cancelled' && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <button onClick={() => onAddPayment(data)} className="px-4 py-2 text-xs text-white bg-brand-600 hover:bg-brand-700 rounded-md">Record Payment</button>
-          </div>
+    <div className="p-6 flex flex-col items-center gap-4">
+      {/* PDF Preview */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" style={{ width: 595, height: 842 }}>
+        {pdfHtml ? (
+          <iframe
+            srcDoc={pdfHtml}
+            style={{ width: 595, height: 842, border: 'none' }}
+            title="Document preview"
+            sandbox="allow-same-origin"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-sm text-gray-400">Loading preview...</div>
         )}
       </div>
+
+      {/* Action button */}
+      {isInvoice && data.status !== 'paid' && data.status !== 'cancelled' && (
+        <button onClick={() => onAddPayment(data)} className="px-4 py-2 text-xs text-white bg-brand-600 hover:bg-brand-700 rounded-md">Record Payment</button>
+      )}
     </div>
   );
 }

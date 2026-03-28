@@ -136,6 +136,10 @@ function registerIpcHandlers() {
   ipcMain.handle('setDefaultTemplate', (_, id, type) => db.setDefaultTemplate(id, type));
 
   // PDF + Email
+  ipcMain.handle('generatePdfHtml', (_, docType, docId) => {
+    const pdf = require('./pdf');
+    return pdf.generateHtml(docType, docId);
+  });
   ipcMain.handle('generatePdf', async (_, docType, docId) => {
     const pdf = require('./pdf');
     return pdf.generate(docType, docId);

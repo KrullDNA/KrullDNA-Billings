@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('api', {
   setDefaultTemplate: (id, type) => ipcRenderer.invoke('setDefaultTemplate', id, type),
 
   // PDF + Email
+  generatePdfHtml: (docType, docId) => ipcRenderer.invoke('generatePdfHtml', docType, docId),
   generatePdf: (docType, docId) => ipcRenderer.invoke('generatePdf', docType, docId),
   sendEmail: (docType, docId, opts) => ipcRenderer.invoke('sendEmail', docType, docId, opts),
   savePdfAs: (sourcePath, defaultFilename, folderPath) => ipcRenderer.invoke('savePdfAs', sourcePath, defaultFilename, folderPath),
