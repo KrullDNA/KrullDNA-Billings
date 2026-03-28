@@ -293,7 +293,7 @@ function lineItemsHtml(props, data) {
       const divColor = item._isFirstInCat && item._cat ? '#111' : '#e5e7eb';
       html += `<hr style="border:none;border-top:1px solid ${divColor};margin:8px 0;" />`;
     }
-    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;">`;
+    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;${i === 0 ? 'margin-top:8px;' : ''}">`;
     html += `<div style="flex:1;padding-right:16px;">`;
     if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
     html += `<div style="font-size:11px;color:#000;">${esc(item.name)}</div>`;
@@ -433,4 +433,40 @@ function footerHtml(props, data) {
   return html;
 }
 
-module.exports = { generate, renderToHtml };
+function generateHtml(docType, docId) {
+  const isInvoice = docType === 'invoice';
+  const doc = isInvoice ? db.getInvoice(docId) : db.getEstimate(docId);
+  if (!doc) throw new Error(`${docType} not found: ${docId}`);
+
+  const client = db.getClient(doc.client_id);
+  if (!client) throw new Error('Client not found');
+
+  const settings = db.getSettings();
+  const lineItems = doc.lineItems || [];
+  const currency = doc.currency || 'AUD';
+
+  let blocks = [];
+  if (doc.layout_snapshot) {
+    blocks = JSON.parse(doc.layout_snapshot);
+  } else if (doc.template_id) {
+    const template = db.getTemplate(doc.template_id);
+    if (template) blocks = JSON.parse(template.blocks_json || '[]');
+  }
+  if (blocks.length === 0) {
+    const templates = db.getTemplates(docType);
+    const def = templates.find((t) => t.is_default) || templates[0];
+    if (def) blocks = JSON.parse(def.blocks_json || '[]');
+  }
+
+  const isPaid = isInvoice && doc.status === 'paid';
+
+  if (doc.project_id) {
+    const project = db.getProject(doc.project_id);
+    if (project) doc.project_name = project.name;
+  }
+
+  const data = { settings, client, document: doc, lineItems, docType, currency, isPaid, docTitle: '' };
+  return renderToHtml(blocks, data);
+}
+
+module.exports = { generate, generateHtml, renderToHtml };

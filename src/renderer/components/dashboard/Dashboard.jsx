@@ -55,7 +55,9 @@ export default function Dashboard() {
                 <span className="font-medium text-gray-700 truncate">{row.number || 'Payment'}</span>
                 <span className="text-gray-500 truncate flex-1">{clientName(row)}</span>
                 <span className={`tabular-nums ${row.doc_type === 'payment' ? 'text-green-600' : 'text-gray-700'}`}>{row.doc_type === 'payment' ? '-' : ''}{fmt(row.amount)}</span>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(row.status)}`}>{row.status?.toUpperCase()}</span>
+                {!(row.doc_type === 'estimate' && row.status === 'draft') && (
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(row.status)}`}>{row.status?.toUpperCase()}</span>
+                )}
               </div>
             ))}
           </div>
