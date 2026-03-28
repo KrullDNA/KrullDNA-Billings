@@ -295,6 +295,7 @@ function AccountTab({ client, currency, onRefresh }) {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [settings, setSettings] = useState({});
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, tx }
 
   const loadAccountData = useCallback(async () => {
     if (!client?.id) return;
@@ -344,6 +345,52 @@ function AccountTab({ client, currency, onRefresh }) {
     } catch (err) { console.error(err); }
   }
 
+  function handleContextMenu(e, tx) {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, tx });
+  }
+
+  async function handleDeleteDoc(tx) {
+    setContextMenu(null);
+    const label = tx.type === 'invoice' ? `Invoice ${tx.number}` : `Estimate ${tx.number}`;
+    if (!confirm(`Delete ${label}?`)) return;
+    try {
+      if (tx.type === 'invoice') await window.api.deleteInvoice(tx.data.id);
+      else await window.api.deleteEstimate(tx.data.id);
+      if (selectedItem?.data.id === tx.data.id) setSelectedItem(null);
+      await loadAccountData();
+      onRefresh();
+    } catch (err) { console.error(err); }
+  }
+
+  async function handleDeleteAndRestore(tx) {
+    setContextMenu(null);
+    const label = tx.type === 'invoice' ? `Invoice ${tx.number}` : `Estimate ${tx.number}`;
+    if (!confirm(`Delete ${label} and restore its line items back to unbilled?`)) return;
+    try {
+      if (tx.type === 'invoice') await window.api.deleteInvoiceAndRestore(tx.data.id);
+      else await window.api.deleteEstimateAndRestore(tx.data.id);
+      if (selectedItem?.data.id === tx.data.id) setSelectedItem(null);
+      await loadAccountData();
+      onRefresh();
+    } catch (err) { console.error(err); }
+  }
+
+  async function handleRegeneratePdf(tx) {
+    setContextMenu(null);
+    try {
+      await window.api.generatePdf(tx.type, tx.data.id);
+    } catch (err) { console.error(err); }
+  }
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
+
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Left Panel: Transaction List */}
@@ -355,6 +402,7 @@ function AccountTab({ client, currency, onRefresh }) {
             <button
               key={`${tx.type}-${tx.data.id}-${i}`}
               onClick={() => setSelectedItem(tx)}
+              onContextMenu={(e) => handleContextMenu(e, tx)}
               className={`w-full text-left px-4 py-3 border-b border-gray-50 text-sm ${
                 selectedItem?.type === tx.type && selectedItem?.data.id === tx.data.id
                   ? 'bg-brand-50' : 'hover:bg-gray-50'
@@ -371,7 +419,7 @@ function AccountTab({ client, currency, onRefresh }) {
                   </span>
                   <span className="font-medium truncate">{tx.number}</span>
                 </div>
-                {!(tx.type === 'estimate' && tx.status === 'draft') && (
+                {tx.status !== 'draft' && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(tx.status)}`}>
                     {tx.status?.toUpperCase()}
                   </span>
@@ -425,6 +473,34 @@ function AccountTab({ client, currency, onRefresh }) {
         businessName={settings.business_name}
         currency={currency}
       />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[200px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          {contextMenu.tx.type === 'invoice' && (
+            <>
+              <button onClick={() => handleDeleteDoc(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Delete Invoice</button>
+              <button onClick={() => handleDeleteAndRestore(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Delete and Restore Line Items</button>
+              <div className="border-t border-gray-100 my-1" />
+              <button onClick={() => handleRegeneratePdf(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Regenerate PDF</button>
+            </>
+          )}
+          {contextMenu.tx.type === 'estimate' && (
+            <>
+              <button onClick={() => handleDeleteDoc(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Delete Estimate</button>
+              <button onClick={() => handleDeleteAndRestore(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Delete and Restore Line Items</button>
+              <div className="border-t border-gray-100 my-1" />
+              <button onClick={() => handleRegeneratePdf(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Regenerate PDF</button>
+            </>
+          )}
+          {contextMenu.tx.type === 'payment' && (
+            <button onClick={() => { setContextMenu(null); handleShowReceipt(contextMenu.tx.data); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View Receipt</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

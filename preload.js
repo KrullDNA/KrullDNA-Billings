@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('api', {
   updateInvoice: (id, data) => ipcRenderer.invoke('updateInvoice', id, data),
   updateInvoiceStatus: (id, status) => ipcRenderer.invoke('updateInvoiceStatus', id, status),
   deleteInvoice: (id) => ipcRenderer.invoke('deleteInvoice', id),
+  deleteInvoiceAndRestore: (id) => ipcRenderer.invoke('deleteInvoiceAndRestore', id),
   convertEstimateToInvoice: (estimateId) => ipcRenderer.invoke('convertEstimateToInvoice', estimateId),
 
   // Estimates
@@ -59,6 +60,7 @@ contextBridge.exposeInMainWorld('api', {
   updateEstimate: (id, data) => ipcRenderer.invoke('updateEstimate', id, data),
   updateEstimateStatus: (id, status) => ipcRenderer.invoke('updateEstimateStatus', id, status),
   deleteEstimate: (id) => ipcRenderer.invoke('deleteEstimate', id),
+  deleteEstimateAndRestore: (id) => ipcRenderer.invoke('deleteEstimateAndRestore', id),
 
   // Payments
   getPayments: (clientId) => ipcRenderer.invoke('getPayments', clientId),
