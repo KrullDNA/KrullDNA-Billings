@@ -138,8 +138,8 @@ export default function Sidebar({
   return (
     <aside className="w-[220px] min-w-[220px] bg-gray-50 border-r border-gray-200 flex flex-col h-full select-none">
       {/* Drag region for macOS traffic lights */}
-      <div className="drag-region h-10 flex items-end px-4 pb-1">
-        <span className="no-drag text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="drag-region flex flex-col px-4" style={{ paddingTop: 38 }}>
+        <span className="no-drag text-xs font-semibold text-gray-500 uppercase tracking-wider pb-1">
           Clients
         </span>
       </div>
