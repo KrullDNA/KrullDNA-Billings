@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Clients
   getClients: (groupId) => ipcRenderer.invoke('getClients', groupId),
+  getUnfiledClients: () => ipcRenderer.invoke('getUnfiledClients'),
   getClient: (id) => ipcRenderer.invoke('getClient', id),
   getClientSummary: (id) => ipcRenderer.invoke('getClientSummary', id),
   createClient: (data) => ipcRenderer.invoke('createClient', data),

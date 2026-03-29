@@ -26,6 +26,7 @@ export default function Sidebar({
   onEditClient,
 }) {
   const [clientsByGroup, setClientsByGroup] = useState({});
+  const [unfiledClients, setUnfiledClients] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [contextMenu, setContextMenu] = useState(null);
   const [addingGroup, setAddingGroup] = useState(false);
@@ -48,6 +49,7 @@ export default function Sidebar({
       }
     }
     setClientsByGroup(grouped);
+    try { setUnfiledClients(await window.api.getUnfiledClients()); } catch { setUnfiledClients([]); }
   }, [clientGroups]);
 
   useEffect(() => {
@@ -168,6 +170,23 @@ export default function Sidebar({
             ))}
           </SortableContext>
         </DndContext>
+
+        {/* Unfiled Clients */}
+        {unfiledClients.length > 0 && (
+          <UnfiledSection
+            clients={unfiledClients}
+            selectedClient={selectedClient}
+            onSelectClient={(client) => {
+              onSelectClient(client);
+              onNavigate('client');
+            }}
+            onEditClient={onEditClient}
+            onContextMenu={handleClientContextMenu}
+            clientDisplayName={clientDisplayName}
+            expanded={expandedGroups['_unfiled']}
+            onToggle={() => toggleGroup('_unfiled')}
+          />
+        )}
 
         {/* Add Group */}
         {addingGroup ? (
@@ -366,6 +385,55 @@ function ContextMenu({ x, y, client, clientGroups, onMoveToGroup, onEdit, onArch
       >
         Archive
       </button>
+    </div>
+  );
+}
+
+function UnfiledSection({ clients, selectedClient, onSelectClient, onEditClient, onContextMenu, clientDisplayName, expanded, onToggle }) {
+  return (
+    <div className="mb-1">
+      <div className="flex items-center">
+        <button onClick={onToggle} className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider w-full text-left hover:text-gray-700">
+          <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          Unfiled Clients
+        </button>
+      </div>
+      {expanded && (
+        <div className="ml-5">
+          {clients.map((client) => {
+            const isSelected = selectedClient?.id === client.id;
+            const hasOutstanding = client.outstanding_count > 0;
+            return (
+              <button
+                key={client.id}
+                onClick={() => onSelectClient(client)}
+                onDoubleClick={() => onEditClient(client)}
+                onContextMenu={(e) => onContextMenu(e, client)}
+                className={`w-full text-left px-3 py-1.5 text-sm rounded-md truncate flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-brand-600 text-white'
+                    : hasOutstanding
+                      ? 'text-red-600 font-semibold hover:bg-red-50'
+                      : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {client.is_company ? (
+                  <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-white' : hasOutstanding ? 'text-red-400' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                  </svg>
+                ) : (
+                  <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-white' : hasOutstanding ? 'text-red-400' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                )}
+                <span className="truncate">{clientDisplayName(client)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
