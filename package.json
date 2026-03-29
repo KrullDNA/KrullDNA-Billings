@@ -56,12 +56,12 @@
           "arch": ["universal"]
         }
       ],
-      "icon": "build/icon.icns",
+      "icon": "icon.icns",
       "category": "public.app-category.business"
     },
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "icon.ico"
     },
     "nsis": {
       "oneClick": false,
