@@ -65,7 +65,7 @@ export default function BackupSettings() {
       const result = await window.api.importBillingsPro(filePath);
       setImportStatus({
         type: 'success',
-        message: `Import complete! ${result.clients} clients, ${result.projects} projects, ${result.invoices} invoices, ${result.estimates} estimates, ${result.payments} payments imported. Please restart the app.`,
+        message: `Import complete! ${result.clients} clients, ${result.projects} projects, ${result.invoices} invoices (${result.invoiceLines} items), ${result.estimates} estimates (${result.estimateLines} items), ${result.payments} payments. Restart the app to see all data.`,
       });
     } catch (err) {
       setImportStatus({ type: 'error', message: `Import failed: ${err.message}` });

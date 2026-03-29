@@ -64,15 +64,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Check for pending restore before opening DB
+  // Clean up any stale pending restore
   const dbPath = path.join(app.getPath('userData'), 'krull-billings.db');
   const pendingPath = dbPath + '.pending-restore';
   if (fs.existsSync(pendingPath)) {
-    try {
-      const safetyPath = dbPath + '.pre-restore';
-      if (fs.existsSync(dbPath)) fs.copyFileSync(dbPath, safetyPath);
-      fs.renameSync(pendingPath, dbPath);
-    } catch (err) { console.error('Restore swap failed:', err); }
+    try { fs.unlinkSync(pendingPath); } catch (err) { /* ignore */ }
   }
 
   db.initDatabase();
@@ -256,17 +252,163 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('chooseBilingsProDb', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
-      title: 'Select BillingsPro database (billingspro.bid)',
-      filters: [{ name: 'BillingsPro Database', extensions: ['bid', 'db'] }],
+      title: 'Select import database file (.db)',
+      filters: [{ name: 'Database', extensions: ['db', 'bid'] }],
       properties: ['openFile'],
     });
     if (result.canceled || !result.filePaths.length) return null;
     return result.filePaths[0];
   });
-  ipcMain.handle('importBillingsPro', async (_, bpDbPath) => {
-    if (!bpDbPath || !fs.existsSync(bpDbPath)) throw new Error('BillingsPro database not found');
-    const { importBillingsPro } = require('../../scripts/import-billingspro');
-    return importBillingsPro(bpDbPath, db.getDb());
+  ipcMain.handle('importBillingsPro', async (_, importDbPath) => {
+    if (!importDbPath || !fs.existsSync(importDbPath)) throw new Error('Import file not found');
+    const Database = require('better-sqlite3');
+    const src = new Database(importDbPath, { readonly: true });
+    const dest = db.getDb();
+
+    const counts = {};
+
+    // Import client groups
+    const groups = src.prepare('SELECT * FROM client_groups').all();
+    const groupMap = {};
+    const insertGroup = dest.prepare('INSERT INTO client_groups (name, sort_order) VALUES (?, ?)');
+    for (const g of groups) {
+      const existing = dest.prepare('SELECT id FROM client_groups WHERE name = ?').get(g.name);
+      if (existing) { groupMap[g.id] = existing.id; }
+      else { groupMap[g.id] = insertGroup.run(g.name, g.sort_order || 0).lastInsertRowid; }
+    }
+    counts.groups = groups.length;
+
+    // Import categories
+    const cats = src.prepare('SELECT * FROM categories').all();
+    const catMap = {};
+    for (const c of cats) {
+      const existing = dest.prepare('SELECT id FROM categories WHERE name = ?').get(c.name);
+      if (existing) { catMap[c.id] = existing.id; }
+      else { catMap[c.id] = dest.prepare('INSERT INTO categories (name, sort_order) VALUES (?, ?)').run(c.name, c.sort_order || 0).lastInsertRowid; }
+    }
+    counts.categories = cats.length;
+
+    // Import clients
+    const clients = src.prepare('SELECT * FROM clients').all();
+    const clientMap = {};
+    for (const c of clients) {
+      const r = dest.prepare(`INSERT INTO clients (group_id, first_name, last_name, company, is_company, email, phone,
+        address_street, address_city, address_state, address_postcode, address_country,
+        client_number, tax_id, hourly_rate, mileage_rate, currency, retainer_balance, archived, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        groupMap[c.group_id] || null, c.first_name, c.last_name, c.company, c.is_company,
+        c.email, c.phone, c.address_street, c.address_city, c.address_state,
+        c.address_postcode, c.address_country, c.client_number, c.tax_id,
+        c.hourly_rate || 0, c.mileage_rate || 0, c.currency || 'AUD',
+        c.retainer_balance || 0, c.archived || 0, c.created_at);
+      clientMap[c.id] = r.lastInsertRowid;
+    }
+    counts.clients = clients.length;
+
+    // Import projects
+    const projects = src.prepare('SELECT * FROM projects').all();
+    const projMap = {};
+    for (const p of projects) {
+      const cid = clientMap[p.client_id];
+      if (!cid) continue;
+      const r = dest.prepare('INSERT INTO projects (client_id, name, status, due_date, notes, created_at) VALUES (?,?,?,?,?,?)').run(
+        cid, p.name, p.status || 'active', p.due_date, p.notes, p.created_at);
+      projMap[p.id] = r.lastInsertRowid;
+    }
+    counts.projects = projects.length;
+
+    // Import invoices
+    const invoices = src.prepare('SELECT * FROM invoices').all();
+    const invMap = {};
+    let invSkipped = 0;
+    for (const inv of invoices) {
+      const cid = clientMap[inv.client_id];
+      if (!cid) continue;
+      const pid = projMap[inv.project_id] || null;
+      // Skip if invoice number already exists
+      const existing = dest.prepare('SELECT id FROM invoices WHERE invoice_number = ?').get(inv.invoice_number);
+      if (existing) { invMap[inv.id] = existing.id; invSkipped++; continue; }
+      const r = dest.prepare(`INSERT INTO invoices (client_id, project_id, invoice_number, status, currency,
+        invoice_date, due_date, subtotal, tax_total, total, notes, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        cid, pid, inv.invoice_number, inv.status, inv.currency || 'AUD',
+        inv.invoice_date, inv.due_date, inv.subtotal || 0, inv.tax_total || 0,
+        inv.total || 0, inv.notes, inv.created_at);
+      invMap[inv.id] = r.lastInsertRowid;
+    }
+    counts.invoices = invoices.length - invSkipped;
+
+    // Import invoice line items
+    const invLines = src.prepare('SELECT * FROM invoice_line_items').all();
+    let ilc = 0;
+    for (const li of invLines) {
+      const iid = invMap[li.invoice_id];
+      if (!iid) continue;
+      dest.prepare(`INSERT INTO invoice_line_items (invoice_id, category_name, name, kind, quantity, rate,
+        tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        iid, li.category_name, li.name, li.kind || 'fixed', li.quantity || 1, li.rate || 0,
+        li.tax_name, li.tax_rate || 0, li.subtotal || 0, li.tax_amount || 0, li.total || 0, li.sort_order || 0);
+      ilc++;
+    }
+    counts.invoiceLines = ilc;
+
+    // Import estimates
+    const estimates = src.prepare('SELECT * FROM estimates').all();
+    const estMap = {};
+    let estSkipped = 0;
+    for (const est of estimates) {
+      const cid = clientMap[est.client_id];
+      if (!cid) continue;
+      const pid = projMap[est.project_id] || null;
+      const existing = dest.prepare('SELECT id FROM estimates WHERE estimate_number = ?').get(est.estimate_number);
+      if (existing) { estMap[est.id] = existing.id; estSkipped++; continue; }
+      const r = dest.prepare(`INSERT INTO estimates (client_id, project_id, estimate_number, status, currency,
+        estimate_date, expiry_date, subtotal, tax_total, total, notes, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        cid, pid, est.estimate_number, est.status, est.currency || 'AUD',
+        est.estimate_date, est.expiry_date, est.subtotal || 0, est.tax_total || 0,
+        est.total || 0, est.notes, est.created_at);
+      estMap[est.id] = r.lastInsertRowid;
+    }
+    counts.estimates = estimates.length - estSkipped;
+
+    // Import estimate line items
+    const estLines = src.prepare('SELECT * FROM estimate_line_items').all();
+    let elc = 0;
+    for (const li of estLines) {
+      const eid = estMap[li.estimate_id];
+      if (!eid) continue;
+      dest.prepare(`INSERT INTO estimate_line_items (estimate_id, category_name, name, quantity, rate,
+        tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+        eid, li.category_name, li.name, li.quantity || 1, li.rate || 0,
+        li.tax_name, li.tax_rate || 0, li.subtotal || 0, li.tax_amount || 0, li.total || 0, li.sort_order || 0);
+      elc++;
+    }
+    counts.estimateLines = elc;
+
+    // Import payments
+    const payments = src.prepare('SELECT * FROM payments').all();
+    let pc = 0;
+    for (const p of payments) {
+      const cid = clientMap[p.client_id];
+      if (!cid) continue;
+      const iid = invMap[p.invoice_id] || null;
+      dest.prepare('INSERT INTO payments (client_id, invoice_id, amount, method, payment_date, notes, created_at) VALUES (?,?,?,?,?,?,?)').run(
+        cid, iid, p.amount, p.method, p.payment_date, p.notes, p.created_at);
+      pc++;
+    }
+    counts.payments = pc;
+
+    // Update next numbers
+    const maxInv = src.prepare("SELECT MAX(CAST(invoice_number AS INTEGER)) as m FROM invoices").get();
+    const maxEst = src.prepare("SELECT MAX(CAST(estimate_number AS INTEGER)) as m FROM estimates").get();
+    if (maxInv?.m) dest.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('invoice_next_number', ?)").run(String(maxInv.m + 1));
+    if (maxEst?.m) dest.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('estimate_next_number', ?)").run(String(maxEst.m + 1));
+
+    src.close();
+    return counts;
   });
 
   // Settings
