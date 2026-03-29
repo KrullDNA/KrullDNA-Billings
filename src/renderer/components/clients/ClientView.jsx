@@ -185,7 +185,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
               <span className="text-right text-gray-500">{project.due_date ? new Date(project.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '\u2014'}</span>
               <span className="text-right text-gray-500 tabular-nums">{formatDuration(project.total_duration || 0)}</span>
               <span className="text-right text-gray-500 tabular-nums">{formatCurrency(project.unbilled_total, currency)}</span>
-              <span className="text-right font-medium tabular-nums">{formatCurrency(project.line_items_total, currency)}</span>
+              <span className="text-right font-medium tabular-nums">{formatCurrency(project.line_items_total || project.invoiced_total || 0, currency)}</span>
             </button>
           ))}
         </div>

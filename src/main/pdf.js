@@ -299,7 +299,7 @@ function lineItemsHtml(props, data) {
     html += `<div style="font-size:11px;color:#000;">${esc(item.name)}</div>`;
     if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
     html += `</div>`;
-    html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.total, currency)}</div>`;
+    html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.subtotal || item.total, currency)}</div>`;
     html += `</div>`;
   });
 

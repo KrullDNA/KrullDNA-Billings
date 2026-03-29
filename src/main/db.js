@@ -406,7 +406,9 @@ function getProjects(clientId) {
     SELECT p.*,
       COALESCE(SUM(CASE WHEN li.status = 'unbilled' THEN li.total ELSE 0 END), 0) as unbilled_total,
       COALESCE(SUM(li.total), 0) as line_items_total,
-      COALESCE(SUM(li.duration_seconds), 0) as total_duration
+      COALESCE(SUM(li.duration_seconds), 0) as total_duration,
+      COALESCE((SELECT SUM(i.total) FROM invoices i WHERE i.project_id = p.id AND i.status != 'cancelled'), 0) as invoiced_total,
+      COALESCE((SELECT SUM(e.total) FROM estimates e WHERE e.project_id = p.id), 0) as estimated_total
     FROM projects p
     LEFT JOIN line_items li ON li.project_id = p.id
     WHERE p.client_id = ? AND p.status != 'archived'
