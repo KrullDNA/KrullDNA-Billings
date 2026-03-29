@@ -238,10 +238,19 @@ function registerIpcHandlers() {
     // Save a safety copy before restoring
     const safetyPath = dbPath + '.pre-restore';
     fs.copyFileSync(dbPath, safetyPath);
-    // Close current DB, copy backup over, reinitialise
-    db.getDb().close();
+    // Copy backup over (don't close the DB - just replace the file and restart)
+    try {
+      db.getDb().close();
+    } catch (e) { /* ignore close errors */ }
     fs.copyFileSync(backupPath, dbPath);
-    db.initDatabase();
+    try {
+      db.initDatabase();
+    } catch (e) {
+      console.error('Re-init failed, will work after restart:', e);
+    }
+    // Relaunch the app for a clean state
+    app.relaunch();
+    app.exit(0);
     return true;
   });
   ipcMain.handle('chooseBilingsProDb', async () => {
