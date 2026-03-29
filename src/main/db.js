@@ -314,10 +314,32 @@ function seedDefaults() {
 }
 
 function repairMissingLineItems() {
-  // One-time repair: reconstruct line_items from estimate/invoice snapshots
-  // for imported data that is missing them.
+  // Repair imported data: reconstruct line_items from estimate/invoice snapshots,
+  // fix invoice statuses, and link orphaned documents to projects.
 
-  // Find estimate_line_items with no corresponding line_item
+  // Helper: find or create a project for a client so line items have somewhere to live
+  function ensureProject(clientId, docType) {
+    // Use the first existing project for this client
+    const existing = db.prepare('SELECT id FROM projects WHERE client_id = ? ORDER BY created_at LIMIT 1').get(clientId);
+    if (existing) return existing.id;
+    // Create a default project
+    const r = db.prepare("INSERT INTO projects (client_id, name, status, created_at) VALUES (?, ?, 'active', datetime('now'))").run(clientId, 'Imported Work');
+    return r.lastInsertRowid;
+  }
+
+  // Step 1: Fix invoices/estimates missing project_id — assign them to the client's project
+  const invoicesNoProject = db.prepare('SELECT id, client_id FROM invoices WHERE project_id IS NULL AND client_id IS NOT NULL').all();
+  for (const inv of invoicesNoProject) {
+    const pid = ensureProject(inv.client_id);
+    db.prepare('UPDATE invoices SET project_id = ? WHERE id = ?').run(pid, inv.id);
+  }
+  const estimatesNoProject = db.prepare('SELECT id, client_id FROM estimates WHERE project_id IS NULL AND client_id IS NOT NULL').all();
+  for (const est of estimatesNoProject) {
+    const pid = ensureProject(est.client_id);
+    db.prepare('UPDATE estimates SET project_id = ? WHERE id = ?').run(pid, est.id);
+  }
+
+  // Step 2: Reconstruct line_items from estimate_line_items
   const orphanedEstLines = db.prepare(`
     SELECT eli.id, eli.estimate_id, eli.name, eli.quantity, eli.rate,
       eli.tax_name, eli.tax_rate, eli.subtotal, eli.tax_amount, eli.total,
@@ -328,26 +350,22 @@ function repairMissingLineItems() {
       AND e.project_id IS NOT NULL
   `).all();
 
-  if (orphanedEstLines.length > 0) {
-    const insertLI = db.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`);
-    const linkELI = db.prepare('UPDATE estimate_line_items SET line_item_id = ? WHERE id = ?');
+  const insertLI = db.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`);
 
-    for (const li of orphanedEstLines) {
-      // Check if a matching line_item already exists in this project
-      const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
-        .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
-      if (existing) {
-        linkELI.run(existing.id, li.id);
-      } else {
-        const r = insertLI.run(li.project_id, li.name, 'fixed', li.rate || 0, li.quantity || 1,
-          li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'unbilled');
-        linkELI.run(r.lastInsertRowid, li.id);
-      }
+  for (const li of orphanedEstLines) {
+    const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
+      .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
+    if (existing) {
+      db.prepare('UPDATE estimate_line_items SET line_item_id = ? WHERE id = ?').run(existing.id, li.id);
+    } else {
+      const r = insertLI.run(li.project_id, li.name, 'fixed', li.rate || 0, li.quantity || 1,
+        li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'unbilled');
+      db.prepare('UPDATE estimate_line_items SET line_item_id = ? WHERE id = ?').run(r.lastInsertRowid, li.id);
     }
   }
 
-  // Find invoice_line_items with no corresponding line_item
+  // Step 3: Reconstruct line_items from invoice_line_items
   const orphanedInvLines = db.prepare(`
     SELECT ili.id, ili.invoice_id, ili.name, ili.kind, ili.quantity, ili.rate,
       ili.tax_name, ili.tax_rate, ili.subtotal, ili.tax_amount, ili.total,
@@ -358,24 +376,26 @@ function repairMissingLineItems() {
       AND i.project_id IS NOT NULL
   `).all();
 
-  if (orphanedInvLines.length > 0) {
-    const insertLI = db.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`);
-    const linkILI = db.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?');
+  for (const li of orphanedInvLines) {
+    const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
+      .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
+    if (existing) {
+      db.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?').run(existing.id, li.id);
+      db.prepare("UPDATE line_items SET status = 'invoiced' WHERE id = ? AND status = 'unbilled'").run(existing.id);
+    } else {
+      const r = insertLI.run(li.project_id, li.name, li.kind || 'fixed', li.rate || 0, li.quantity || 1,
+        li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'invoiced');
+      db.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?').run(r.lastInsertRowid, li.id);
+    }
+  }
 
-    for (const li of orphanedInvLines) {
-      // Check if an estimate already created this line item (match by project + name + rate + qty)
-      const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
-        .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
-      if (existing) {
-        linkILI.run(existing.id, li.id);
-        // Mark as invoiced since it's on an invoice
-        db.prepare("UPDATE line_items SET status = 'invoiced' WHERE id = ? AND status = 'unbilled'").run(existing.id);
-      } else {
-        const r = insertLI.run(li.project_id, li.name, li.kind || 'fixed', li.rate || 0, li.quantity || 1,
-          li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'invoiced');
-        linkILI.run(r.lastInsertRowid, li.id);
-      }
+  // Step 4: Fix invoices marked 'paid' that have no payments (or insufficient payments)
+  const paidInvoices = db.prepare("SELECT id, total, sent_at FROM invoices WHERE status = 'paid'").all();
+  for (const inv of paidInvoices) {
+    const totalPaid = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE invoice_id = ?').get(inv.id).total;
+    if (totalPaid < inv.total) {
+      const newStatus = inv.sent_at ? 'sent' : 'draft';
+      db.prepare("UPDATE invoices SET status = ?, paid_date = NULL, updated_at = datetime('now') WHERE id = ?").run(newStatus, inv.id);
     }
   }
 }
