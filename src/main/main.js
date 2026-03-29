@@ -261,8 +261,12 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('importBillingsPro', async (_, importDbPath) => {
     if (!importDbPath || !fs.existsSync(importDbPath)) throw new Error('Import file not found');
+    // Copy to temp location to avoid macOS sandbox/permission issues
+    const os = require('os');
+    const tmpPath = path.join(os.tmpdir(), 'krull-import-temp.db');
+    fs.copyFileSync(importDbPath, tmpPath);
     const Database = require('better-sqlite3');
-    const src = new Database(importDbPath, { readonly: true });
+    const src = new Database(tmpPath, { readonly: true });
     const dest = db.getDb();
 
     const counts = {};
@@ -408,6 +412,7 @@ function registerIpcHandlers() {
     if (maxEst?.m) dest.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('estimate_next_number', ?)").run(String(maxEst.m + 1));
 
     src.close();
+    try { fs.unlinkSync(tmpPath); } catch (e) { /* ignore */ }
     return counts;
   });
 
