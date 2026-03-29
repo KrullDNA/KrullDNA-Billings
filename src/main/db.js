@@ -331,10 +331,14 @@ function reorderClientGroups(orderedIds) {
 // ── Clients ──
 
 function getClients(groupId) {
-  if (groupId) {
-    return db.prepare('SELECT * FROM clients WHERE group_id = ? AND archived = 0 ORDER BY company, last_name, first_name').all(groupId);
-  }
-  return db.prepare('SELECT * FROM clients WHERE archived = 0 ORDER BY company, last_name, first_name').all();
+  const query = `
+    SELECT c.*,
+      COALESCE((SELECT COUNT(*) FROM invoices i WHERE i.client_id = c.id AND i.status IN ('sent', 'overdue')), 0) as outstanding_count
+    FROM clients c
+    WHERE c.archived = 0 ${groupId ? 'AND c.group_id = ?' : ''}
+    ORDER BY c.company, c.last_name, c.first_name
+  `;
+  return groupId ? db.prepare(query).all(groupId) : db.prepare(query).all();
 }
 
 function getClient(id) {
