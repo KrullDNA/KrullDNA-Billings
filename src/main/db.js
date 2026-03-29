@@ -348,10 +348,20 @@ function getClients(groupId) {
     SELECT c.*,
       COALESCE((SELECT COUNT(*) FROM invoices i WHERE i.client_id = c.id AND i.status IN ('sent', 'overdue')), 0) as outstanding_count
     FROM clients c
-    WHERE c.archived = 0 ${groupId ? 'AND c.group_id = ?' : ''}
+    WHERE c.archived = 0 ${groupId ? 'AND c.group_id = ?' : groupId === null ? 'AND c.group_id IS NULL' : ''}
     ORDER BY c.company, c.last_name, c.first_name
   `;
   return groupId ? db.prepare(query).all(groupId) : db.prepare(query).all();
+}
+
+function getUnfiledClients() {
+  return db.prepare(`
+    SELECT c.*,
+      COALESCE((SELECT COUNT(*) FROM invoices i WHERE i.client_id = c.id AND i.status IN ('sent', 'overdue')), 0) as outstanding_count
+    FROM clients c
+    WHERE c.archived = 0 AND c.group_id IS NULL
+    ORDER BY c.company, c.last_name, c.first_name
+  `).all();
 }
 
 function getClient(id) {
@@ -907,7 +917,7 @@ module.exports = {
   // Client Groups
   getClientGroups, saveClientGroup, deleteClientGroup, reorderClientGroups,
   // Clients
-  getClients, getClient, getClientSummary, createClient, updateClient, archiveClient, moveClientToGroup,
+  getClients, getUnfiledClients, getClient, getClientSummary, createClient, updateClient, archiveClient, moveClientToGroup,
   // Projects
   getProjects, getProject, createProject, updateProject, archiveProject,
   // Line Items

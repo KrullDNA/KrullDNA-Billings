@@ -11,6 +11,38 @@ import UnfiledSlips from './components/lineitems/UnfiledSlips';
 import Approvals from './components/estimates/Approvals';
 import Reports from './components/dashboard/Reports';
 
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+
+function lighten(hex, factor) {
+  const { r, g, b } = hexToRgb(hex);
+  const lr = Math.round(r + (255 - r) * factor);
+  const lg = Math.round(g + (255 - g) * factor);
+  const lb = Math.round(b + (255 - b) * factor);
+  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+}
+
+function darken(hex, factor) {
+  const { r, g, b } = hexToRgb(hex);
+  return `#${Math.round(r * (1 - factor)).toString(16).padStart(2, '0')}${Math.round(g * (1 - factor)).toString(16).padStart(2, '0')}${Math.round(b * (1 - factor)).toString(16).padStart(2, '0')}`;
+}
+
+export function applyBrandColour(primary, lightOverride) {
+  const root = document.documentElement;
+  root.style.setProperty('--brand-600', primary);
+  root.style.setProperty('--brand-700', darken(primary, 0.1));
+  root.style.setProperty('--brand-800', darken(primary, 0.2));
+  root.style.setProperty('--brand-900', darken(primary, 0.3));
+  root.style.setProperty('--brand-500', lighten(primary, 0.1));
+  root.style.setProperty('--brand-400', lighten(primary, 0.25));
+  root.style.setProperty('--brand-300', lighten(primary, 0.4));
+  root.style.setProperty('--brand-200', lightOverride || lighten(primary, 0.55));
+  root.style.setProperty('--brand-100', lightOverride ? lighten(lightOverride, 0.4) : lighten(primary, 0.75));
+  root.style.setProperty('--brand-50', lightOverride ? lighten(lightOverride, 0.7) : lighten(primary, 0.9));
+}
+
 export default function App() {
   const [clientGroups, setClientGroups] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -35,6 +67,19 @@ export default function App() {
 
   useEffect(() => {
     loadClientGroups();
+  }, []);
+
+  // Load brand colour and apply CSS variables
+  useEffect(() => {
+    async function loadBrandColour() {
+      try {
+        const settings = await window.api.getSettings();
+        const hex = settings.brand_colour || settings.brand_colour_primary || '#4c6ef5';
+        const hexLight = settings.brand_colour_light || null;
+        applyBrandColour(hex, hexLight);
+      } catch {}
+    }
+    loadBrandColour();
   }, []);
 
   // Keyboard shortcuts
