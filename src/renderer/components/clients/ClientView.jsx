@@ -79,12 +79,10 @@ export default function ClientView({ client, newProjectRequested }) {
   const loadLineItems = useCallback(async () => {
     if (!selectedProject?.id) { setLineItems([]); return; }
     try {
-      const items = lineItemFilter === 'estimate'
-        ? await window.api.getUnbilledLineItems(selectedProject.id)
-        : await window.api.getLineItems(selectedProject.id);
+      const items = await window.api.getLineItems(selectedProject.id);
       setLineItems(items);
     } catch (err) { console.error(err); }
-  }, [selectedProject?.id, lineItemFilter]);
+  }, [selectedProject?.id]);
 
   useEffect(() => { loadLineItems(); }, [loadLineItems]);
 
@@ -153,10 +151,11 @@ function TabButton({ label, active, onClick }) {
 // ── Projects Tab ──
 
 function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency }) {
-  const estimateItems = lineItems.filter((i) => i.status === 'unbilled');
+  const unbilledItems = lineItems.filter((i) => i.status === 'unbilled');
+  const estimateItems = lineItems.filter((i) => i.status === 'unbilled' || i.status === 'invoiced');
   const workingItems = lineItems.filter((i) => i.status === 'invoiced' || i.status === 'working');
   const displayItems = lineItemFilter === 'estimate' ? estimateItems : lineItems;
-  const hasEstimateItems = estimateItems.length > 0;
+  const hasEstimateItems = unbilledItems.length > 0;
   const hasWorkingItems = lineItems.some((i) => i.status !== 'unbilled');
 
   async function handleStartWorking(item) {
@@ -207,7 +206,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
                 {lineItemFilter === 'estimate' ? (
                   <button onClick={onSendEstimate} disabled={!hasEstimateItems} className={`px-3 py-1 text-xs rounded-md font-medium ${hasEstimateItems ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Estimate</button>
                 ) : (
-                  <button onClick={onSendInvoice} disabled={estimateItems.length === 0} className={`px-3 py-1 text-xs rounded-md font-medium ${estimateItems.length > 0 ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Invoice</button>
+                  <button onClick={onSendInvoice} disabled={unbilledItems.length === 0} className={`px-3 py-1 text-xs rounded-md font-medium ${unbilledItems.length > 0 ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Invoice</button>
                 )}
               </div>
             </div>

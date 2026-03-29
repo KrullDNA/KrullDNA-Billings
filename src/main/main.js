@@ -329,6 +329,31 @@ function registerIpcHandlers() {
     }
     counts.projects = projects.length;
 
+    // Import line items (if source has them)
+    const lineItemMap = {};
+    try {
+      const lineItems = src.prepare('SELECT * FROM line_items').all();
+      for (const li of lineItems) {
+        const pid = projMap[li.project_id];
+        if (!pid) continue;
+        const cid = catMap[li.category_id] || null;
+        const tid = li.tax_id || null;
+        const r = dest.prepare(`INSERT INTO line_items (project_id, category_id, name, kind, billable, duration_seconds,
+          rate, quantity, markup_pct, discount_pct, tax_id, subtotal, markup_amount, discount_amount, tax_amount, total,
+          status, notes, date, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+          pid, cid, li.name, li.kind || 'fixed', li.billable ?? 1, li.duration_seconds || 0,
+          li.rate || 0, li.quantity || 1, li.markup_pct || 0, li.discount_pct || 0, tid,
+          li.subtotal || 0, li.markup_amount || 0, li.discount_amount || 0, li.tax_amount || 0, li.total || 0,
+          li.status || 'unbilled', li.notes, li.date, li.created_at);
+        lineItemMap[li.id] = r.lastInsertRowid;
+      }
+      counts.lineItems = lineItems.length;
+    } catch (e) {
+      // Source database may not have a line_items table — reconstruct from estimate_line_items below
+      counts.lineItems = 0;
+    }
+
     // Import invoices
     const invoices = src.prepare('SELECT * FROM invoices').all();
     const invMap = {};
@@ -356,10 +381,11 @@ function registerIpcHandlers() {
     for (const li of invLines) {
       const iid = invMap[li.invoice_id];
       if (!iid) continue;
-      dest.prepare(`INSERT INTO invoice_line_items (invoice_id, category_name, name, kind, quantity, rate,
+      const lid = lineItemMap[li.line_item_id] || null;
+      dest.prepare(`INSERT INTO invoice_line_items (invoice_id, line_item_id, category_name, name, kind, quantity, rate,
         tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-        iid, li.category_name, li.name, li.kind || 'fixed', li.quantity || 1, li.rate || 0,
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        iid, lid, li.category_name, li.name, li.kind || 'fixed', li.quantity || 1, li.rate || 0,
         li.tax_name, li.tax_rate || 0, li.subtotal || 0, li.tax_amount || 0, li.total || 0, li.sort_order || 0);
       ilc++;
     }
@@ -391,14 +417,56 @@ function registerIpcHandlers() {
     for (const li of estLines) {
       const eid = estMap[li.estimate_id];
       if (!eid) continue;
-      dest.prepare(`INSERT INTO estimate_line_items (estimate_id, category_name, name, quantity, rate,
+      const lid = lineItemMap[li.line_item_id] || null;
+      dest.prepare(`INSERT INTO estimate_line_items (estimate_id, line_item_id, category_name, name, quantity, rate,
         tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
-        eid, li.category_name, li.name, li.quantity || 1, li.rate || 0,
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        eid, lid, li.category_name, li.name, li.quantity || 1, li.rate || 0,
         li.tax_name, li.tax_rate || 0, li.subtotal || 0, li.tax_amount || 0, li.total || 0, li.sort_order || 0);
       elc++;
     }
     counts.estimateLines = elc;
+
+    // If no line_items were imported, reconstruct them from estimate/invoice line item snapshots
+    if (counts.lineItems === 0) {
+      let reconstructed = 0;
+      // Reconstruct from estimate line items first (these are unbilled)
+      const estLIs = dest.prepare(`
+        SELECT eli.*, e.project_id FROM estimate_line_items eli
+        JOIN estimates e ON eli.estimate_id = e.id
+        WHERE eli.line_item_id IS NULL AND e.project_id IS NOT NULL
+      `).all();
+      for (const li of estLIs) {
+        const r = dest.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`).run(
+          li.project_id, li.name, 'fixed', li.rate || 0, li.quantity || 1,
+          li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'unbilled');
+        dest.prepare('UPDATE estimate_line_items SET line_item_id = ? WHERE id = ?').run(r.lastInsertRowid, li.id);
+        reconstructed++;
+      }
+      // Reconstruct from invoice line items (these are invoiced)
+      const invLIs = dest.prepare(`
+        SELECT ili.*, i.project_id FROM invoice_line_items ili
+        JOIN invoices i ON ili.invoice_id = i.id
+        WHERE ili.line_item_id IS NULL AND i.project_id IS NOT NULL
+      `).all();
+      for (const li of invLIs) {
+        // Check if an estimate line item already created this line item (by matching name + project)
+        const existing = dest.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND total = ?').get(li.project_id, li.name, li.total || 0);
+        if (existing) {
+          dest.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?').run(existing.id, li.id);
+          dest.prepare("UPDATE line_items SET status = 'invoiced' WHERE id = ?").run(existing.id);
+        } else {
+          const r = dest.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`).run(
+            li.project_id, li.name, li.kind || 'fixed', li.rate || 0, li.quantity || 1,
+            li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'invoiced');
+          dest.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?').run(r.lastInsertRowid, li.id);
+          reconstructed++;
+        }
+      }
+      counts.lineItems = reconstructed;
+    }
 
     // Import payments
     const payments = src.prepare('SELECT * FROM payments').all();
