@@ -22,7 +22,7 @@ function createWindow() {
     minHeight: 720,
     title: 'Krull D+A Billings',
     titleBarStyle: 'hiddenInset',
-    icon: path.join(__dirname, '..', '..', 'icon.icns'),
+    icon: path.join(__dirname, '..', '..', process.platform === 'darwin' ? 'icon.icns' : 'icon.iconset/icon_256x256.png'),
     backgroundColor: '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, '..', '..', 'preload.js'),
