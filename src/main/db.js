@@ -837,6 +837,23 @@ function addPayment(data) {
   return result.lastInsertRowid;
 }
 
+function deletePayment(paymentId) {
+  const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId);
+  if (!payment) return;
+
+  db.prepare('DELETE FROM payments WHERE id = ?').run(paymentId);
+
+  // Recalculate invoice status if this payment was linked to an invoice
+  if (payment.invoice_id) {
+    const totalPaid = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE invoice_id = ?').get(payment.invoice_id).total;
+    const invoice = db.prepare('SELECT total, status, sent_at FROM invoices WHERE id = ?').get(payment.invoice_id);
+    if (invoice && invoice.status === 'paid' && totalPaid < invoice.total) {
+      const newStatus = invoice.sent_at ? 'sent' : 'draft';
+      db.prepare("UPDATE invoices SET status = ?, paid_date = NULL, updated_at = datetime('now') WHERE id = ?").run(newStatus, payment.invoice_id);
+    }
+  }
+}
+
 function getPaymentReceipt(paymentId) {
   return db.prepare(`
     SELECT p.*, i.invoice_number, c.first_name, c.last_name, c.company
@@ -1027,7 +1044,7 @@ module.exports = {
   // Statements
   getStatements, getStatement, createStatement, deleteStatement,
   // Payments
-  getPayments, addPayment, getPaymentReceipt,
+  getPayments, addPayment, deletePayment, getPaymentReceipt,
   // Templates
   getTemplates, getTemplate, saveTemplate, deleteTemplate, setDefaultTemplate,
   // Settings

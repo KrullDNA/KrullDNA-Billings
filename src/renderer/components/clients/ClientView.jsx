@@ -378,6 +378,17 @@ function AccountTab({ client, currency, onRefresh }) {
     } catch (err) { console.error(err); }
   }
 
+  async function handleDeletePayment(tx) {
+    setContextMenu(null);
+    if (!confirm('Delete this payment? The linked invoice status will be recalculated.')) return;
+    try {
+      await window.api.deletePayment(tx.data.id);
+      if (selectedItem?.type === 'payment' && selectedItem?.data.id === tx.data.id) setSelectedItem(null);
+      await loadAccountData();
+      onRefresh();
+    } catch (err) { console.error(err); }
+  }
+
   async function handleRegeneratePdf(tx) {
     setContextMenu(null);
     try {
@@ -506,7 +517,10 @@ function AccountTab({ client, currency, onRefresh }) {
             </>
           )}
           {contextMenu.tx.type === 'payment' && (
+            <>
             <button onClick={() => { setContextMenu(null); handleShowReceipt(contextMenu.tx.data); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View Receipt</button>
+            <button onClick={() => handleDeletePayment(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Delete Payment</button>
+            </>
           )}
         </div>
       )}

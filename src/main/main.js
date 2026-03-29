@@ -152,6 +152,7 @@ function registerIpcHandlers() {
   // Payments
   ipcMain.handle('getPayments', (_, clientId) => db.getPayments(clientId));
   ipcMain.handle('addPayment', (_, data) => db.addPayment(data));
+  ipcMain.handle('deletePayment', (_, paymentId) => db.deletePayment(paymentId));
   ipcMain.handle('getPaymentReceipt', (_, paymentId) => db.getPaymentReceipt(paymentId));
 
   // Statements
