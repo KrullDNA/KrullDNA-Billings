@@ -18,6 +18,7 @@ function initDatabase() {
 
   createTables();
   seedDefaults();
+  updateOverdueInvoices();
 
   return db;
 }
@@ -295,6 +296,18 @@ function seedDefaults() {
     db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Invoice 7 Days', 'invoice', defaultInvoiceBlocks, 1);
     db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Estimate', 'estimate', defaultEstimateBlocks, 1);
   }
+}
+
+function updateOverdueInvoices() {
+  // Mark sent invoices as overdue if past due_date, or 14 days after invoice_date if no due_date
+  db.prepare(`
+    UPDATE invoices SET status = 'overdue'
+    WHERE status = 'sent'
+    AND (
+      (due_date IS NOT NULL AND due_date < date('now'))
+      OR (due_date IS NULL AND invoice_date IS NOT NULL AND date(invoice_date, '+14 days') < date('now'))
+    )
+  `).run();
 }
 
 // ── Client Groups ──
@@ -789,6 +802,7 @@ function saveSettings(obj) {
 // ── Dashboard ──
 
 function getDashboardStats() {
+  updateOverdueInvoices();
   const clientCount = db.prepare('SELECT COUNT(*) as c FROM clients WHERE archived = 0').get().c;
   const projectCount = db.prepare("SELECT COUNT(*) as c FROM projects WHERE status = 'active'").get().c;
   const unbilledTotal = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM line_items WHERE status = 'unbilled'").get().t;
