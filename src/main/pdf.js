@@ -441,7 +441,15 @@ async function generateStatementPdf(stmtId) {
   const client = db.getClient(stmt.client_id);
   const settings = db.getSettings();
   const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
-  const filename = `${clientName} Statement ${stmt.statement_number}.pdf`.replace(/[/\\:*?"<>|]/g, '').trim();
+  const defaultPattern = '%clientName% Statement %stmtNum%';
+  const pattern = settings.statement_filename_pattern || defaultPattern;
+  const filename = pattern
+    .replace('%clientName%', clientName)
+    .replace('%projectName%', '')
+    .replace('%stmtNum%', stmt.statement_number || '')
+    .replace(/[/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() + '.pdf';
   const html = generateStatementHtml(stmtId);
 
   let puppeteer;
