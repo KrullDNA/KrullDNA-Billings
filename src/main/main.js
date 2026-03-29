@@ -40,6 +40,19 @@ function createWindow() {
   mainWindow.on('close', () => {
     const bounds = mainWindow.getBounds();
     config.saveWindowState(bounds);
+
+    // Auto-backup on close
+    try {
+      const settings = db.getSettings();
+      const backupFolder = settings.backup_folder;
+      if (backupFolder && fs.existsSync(backupFolder)) {
+        const dbPath = db.getDbPath();
+        const dest = path.join(backupFolder, 'krull-billings-latest.db');
+        fs.copyFileSync(dbPath, dest);
+      }
+    } catch (err) {
+      console.error('Auto-backup failed:', err);
+    }
   });
 
   mainWindow.on('closed', () => {
