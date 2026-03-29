@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('api', {
   // Payments
   getPayments: (clientId) => ipcRenderer.invoke('getPayments', clientId),
   addPayment: (data) => ipcRenderer.invoke('addPayment', data),
+  deletePayment: (paymentId) => ipcRenderer.invoke('deletePayment', paymentId),
   getPaymentReceipt: (paymentId) => ipcRenderer.invoke('getPaymentReceipt', paymentId),
 
   // Templates
