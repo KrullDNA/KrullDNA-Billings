@@ -48,7 +48,7 @@ export default function BackupSettings() {
     setStatus(null);
     try {
       await window.api.restoreDatabase(filePath);
-      setStatus({ type: 'success', message: 'Database restored successfully. Please restart the app.' });
+      setStatus({ type: 'success', message: 'Restore staged. Quit the app (Cmd+Q) and run "npm start" again to complete the restore.' });
     } catch (err) {
       setStatus({ type: 'error', message: `Restore failed: ${err.message}` });
     }
