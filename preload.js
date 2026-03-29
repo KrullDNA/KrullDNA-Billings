@@ -89,6 +89,10 @@ contextBridge.exposeInMainWorld('api', {
   chooseRestoreFile: () => ipcRenderer.invoke('chooseRestoreFile'),
   restoreDatabase: (backupPath) => ipcRenderer.invoke('restoreDatabase', backupPath),
 
+  // Import
+  chooseBilingsProDb: () => ipcRenderer.invoke('chooseBilingsProDb'),
+  importBillingsPro: (dbPath) => ipcRenderer.invoke('importBillingsPro', dbPath),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('getSettings'),
   saveSetting: (key, value) => ipcRenderer.invoke('saveSetting', key, value),

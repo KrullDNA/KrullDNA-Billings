@@ -4,6 +4,8 @@ export default function BackupSettings() {
   const [backupFolder, setBackupFolder] = useState('');
   const [status, setStatus] = useState(null); // { type: 'success'|'error', message }
   const [loading, setLoading] = useState(false);
+  const [importStatus, setImportStatus] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -53,6 +55,24 @@ export default function BackupSettings() {
     setLoading(false);
   }
 
+  async function handleImportBillingsPro() {
+    const filePath = await window.api.chooseBilingsProDb();
+    if (!filePath) return;
+    if (!confirm('Import all clients, projects, invoices, estimates, and payments from BillingsPro? This will add to your existing data.')) return;
+    setImporting(true);
+    setImportStatus(null);
+    try {
+      const result = await window.api.importBillingsPro(filePath);
+      setImportStatus({
+        type: 'success',
+        message: `Import complete! ${result.clients} clients, ${result.projects} projects, ${result.invoices} invoices, ${result.estimates} estimates, ${result.payments} payments imported. Please restart the app.`,
+      });
+    } catch (err) {
+      setImportStatus({ type: 'error', message: `Import failed: ${err.message}` });
+    }
+    setImporting(false);
+  }
+
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-900 mb-1">Backup & Restore</h2>
@@ -73,10 +93,10 @@ export default function BackupSettings() {
             Browse...
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1">Choose your Dropbox folder or any local folder to save backups to.</p>
+        <p className="text-xs text-gray-400 mt-1">Choose your Dropbox folder or any local folder. Auto-backup runs every time the app closes.</p>
       </div>
 
-      {/* Actions */}
+      {/* Backup/Restore Actions */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={handleBackup}
@@ -98,14 +118,45 @@ export default function BackupSettings() {
         </button>
       </div>
 
-      {/* Status */}
       {status && (
-        <div className={`px-4 py-3 rounded-md text-sm ${
+        <div className={`px-4 py-3 rounded-md text-sm mb-6 ${
           status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
         }`}>
           {status.message}
         </div>
       )}
+
+      {/* Import Section */}
+      <div className="border-t border-gray-200 pt-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Import from BillingsPro</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Import your existing data from a BillingsPro database file (billingspro.bid).
+          This will import all clients, projects, invoices, estimates, and payments.
+        </p>
+
+        <button
+          onClick={handleImportBillingsPro}
+          disabled={importing}
+          className={`px-4 py-2 text-sm font-medium rounded-md ${
+            importing
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-purple-600 text-white hover:bg-purple-700'
+          }`}
+        >
+          {importing ? 'Importing...' : 'Import BillingsPro Database...'}
+        </button>
+        <p className="text-xs text-gray-400 mt-2">
+          Navigate to Storage.bipdb/Database/ and select the billingspro.bid file.
+        </p>
+
+        {importStatus && (
+          <div className={`mt-4 px-4 py-3 rounded-md text-sm ${
+            importStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          }`}>
+            {importStatus.message}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
