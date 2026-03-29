@@ -61,6 +61,17 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Check for pending restore before opening DB
+  const dbPath = path.join(app.getPath('userData'), 'krull-billings.db');
+  const pendingPath = dbPath + '.pending-restore';
+  if (fs.existsSync(pendingPath)) {
+    try {
+      const safetyPath = dbPath + '.pre-restore';
+      if (fs.existsSync(dbPath)) fs.copyFileSync(dbPath, safetyPath);
+      fs.renameSync(pendingPath, dbPath);
+    } catch (err) { console.error('Restore swap failed:', err); }
+  }
+
   db.initDatabase();
   registerIpcHandlers();
   createWindow();
@@ -235,23 +246,12 @@ function registerIpcHandlers() {
   ipcMain.handle('restoreDatabase', async (_, backupPath) => {
     if (!backupPath || !fs.existsSync(backupPath)) throw new Error('Backup file not found');
     const dbPath = db.getDbPath();
-    // Save a safety copy before restoring
-    const safetyPath = dbPath + '.pre-restore';
-    fs.copyFileSync(dbPath, safetyPath);
-    // Copy backup over (don't close the DB - just replace the file and restart)
-    try {
-      db.getDb().close();
-    } catch (e) { /* ignore close errors */ }
-    fs.copyFileSync(backupPath, dbPath);
-    try {
-      db.initDatabase();
-    } catch (e) {
-      console.error('Re-init failed, will work after restart:', e);
-    }
-    // Relaunch the app for a clean state
+    // Stage the backup file — it will be swapped in on next launch
+    const pendingPath = dbPath + '.pending-restore';
+    fs.copyFileSync(backupPath, pendingPath);
+    // Relaunch the app so the swap happens cleanly before DB opens
     app.relaunch();
     app.exit(0);
-    return true;
   });
   ipcMain.handle('chooseBilingsProDb', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
