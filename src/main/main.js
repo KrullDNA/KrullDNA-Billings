@@ -41,14 +41,17 @@ function createWindow() {
     const bounds = mainWindow.getBounds();
     config.saveWindowState(bounds);
 
-    // Auto-backup on close
+    // Auto-backup on close (skip if a restore is pending)
     try {
-      const settings = db.getSettings();
-      const backupFolder = settings.backup_folder;
-      if (backupFolder && fs.existsSync(backupFolder)) {
-        const dbPath = db.getDbPath();
-        const dest = path.join(backupFolder, 'krull-billings-latest.db');
-        fs.copyFileSync(dbPath, dest);
+      const dbPath = db.getDbPath();
+      const pendingRestore = dbPath + '.pending-restore';
+      if (!fs.existsSync(pendingRestore)) {
+        const settings = db.getSettings();
+        const backupFolder = settings.backup_folder;
+        if (backupFolder && fs.existsSync(backupFolder)) {
+          const dest = path.join(backupFolder, 'krull-billings-latest.db');
+          fs.copyFileSync(dbPath, dest);
+        }
       }
     } catch (err) {
       console.error('Auto-backup failed:', err);
@@ -249,9 +252,7 @@ function registerIpcHandlers() {
     // Stage the backup file — it will be swapped in on next launch
     const pendingPath = dbPath + '.pending-restore';
     fs.copyFileSync(backupPath, pendingPath);
-    // Relaunch the app so the swap happens cleanly before DB opens
-    app.relaunch();
-    app.exit(0);
+    return true;
   });
   ipcMain.handle('chooseBilingsProDb', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
