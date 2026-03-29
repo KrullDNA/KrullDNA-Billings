@@ -18,6 +18,7 @@ function initDatabase() {
 
   createTables();
   seedDefaults();
+  repairMissingLineItems();
   updateOverdueInvoices();
 
   return db;
@@ -309,6 +310,73 @@ function seedDefaults() {
 
     db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Invoice 7 Days', 'invoice', defaultInvoiceBlocks, 1);
     db.prepare('INSERT INTO document_templates (name, type, blocks_json, is_default) VALUES (?, ?, ?, ?)').run('KD Estimate', 'estimate', defaultEstimateBlocks, 1);
+  }
+}
+
+function repairMissingLineItems() {
+  // One-time repair: reconstruct line_items from estimate/invoice snapshots
+  // for imported data that is missing them.
+
+  // Find estimate_line_items with no corresponding line_item
+  const orphanedEstLines = db.prepare(`
+    SELECT eli.id, eli.estimate_id, eli.name, eli.quantity, eli.rate,
+      eli.tax_name, eli.tax_rate, eli.subtotal, eli.tax_amount, eli.total,
+      e.project_id
+    FROM estimate_line_items eli
+    JOIN estimates e ON eli.estimate_id = e.id
+    WHERE eli.line_item_id IS NULL
+      AND e.project_id IS NOT NULL
+  `).all();
+
+  if (orphanedEstLines.length > 0) {
+    const insertLI = db.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`);
+    const linkELI = db.prepare('UPDATE estimate_line_items SET line_item_id = ? WHERE id = ?');
+
+    for (const li of orphanedEstLines) {
+      // Check if a matching line_item already exists in this project
+      const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
+        .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
+      if (existing) {
+        linkELI.run(existing.id, li.id);
+      } else {
+        const r = insertLI.run(li.project_id, li.name, 'fixed', li.rate || 0, li.quantity || 1,
+          li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'unbilled');
+        linkELI.run(r.lastInsertRowid, li.id);
+      }
+    }
+  }
+
+  // Find invoice_line_items with no corresponding line_item
+  const orphanedInvLines = db.prepare(`
+    SELECT ili.id, ili.invoice_id, ili.name, ili.kind, ili.quantity, ili.rate,
+      ili.tax_name, ili.tax_rate, ili.subtotal, ili.tax_amount, ili.total,
+      i.project_id
+    FROM invoice_line_items ili
+    JOIN invoices i ON ili.invoice_id = i.id
+    WHERE ili.line_item_id IS NULL
+      AND i.project_id IS NOT NULL
+  `).all();
+
+  if (orphanedInvLines.length > 0) {
+    const insertLI = db.prepare(`INSERT INTO line_items (project_id, name, kind, rate, quantity, subtotal, tax_amount, total, status, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`);
+    const linkILI = db.prepare('UPDATE invoice_line_items SET line_item_id = ? WHERE id = ?');
+
+    for (const li of orphanedInvLines) {
+      // Check if an estimate already created this line item (match by project + name + rate + qty)
+      const existing = db.prepare('SELECT id FROM line_items WHERE project_id = ? AND name = ? AND rate = ? AND quantity = ?')
+        .get(li.project_id, li.name, li.rate || 0, li.quantity || 1);
+      if (existing) {
+        linkILI.run(existing.id, li.id);
+        // Mark as invoiced since it's on an invoice
+        db.prepare("UPDATE line_items SET status = 'invoiced' WHERE id = ? AND status = 'unbilled'").run(existing.id);
+      } else {
+        const r = insertLI.run(li.project_id, li.name, li.kind || 'fixed', li.rate || 0, li.quantity || 1,
+          li.subtotal || 0, li.tax_amount || 0, li.total || 0, 'invoiced');
+        linkILI.run(r.lastInsertRowid, li.id);
+      }
+    }
   }
 }
 
