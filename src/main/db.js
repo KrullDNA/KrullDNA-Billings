@@ -417,6 +417,12 @@ function getProjects(clientId) {
   `).all(clientId);
 }
 
+function getProjectTotal(clientId) {
+  // Total from invoices linked to client (includes ones without project_id)
+  const inv = db.prepare("SELECT COALESCE(SUM(total), 0) as t FROM invoices WHERE client_id = ? AND status != 'cancelled'").get(clientId);
+  return inv.t;
+}
+
 function getProject(id) {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
   if (project) {
