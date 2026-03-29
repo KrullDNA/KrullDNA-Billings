@@ -83,6 +83,12 @@ contextBridge.exposeInMainWorld('api', {
   printPdf: (pdfPath) => ipcRenderer.invoke('printPdf', pdfPath),
   openPdf: (pdfPath) => ipcRenderer.invoke('openPdf', pdfPath),
 
+  // Backup & Restore
+  chooseBackupFolder: () => ipcRenderer.invoke('chooseBackupFolder'),
+  backupDatabase: (folderPath) => ipcRenderer.invoke('backupDatabase', folderPath),
+  chooseRestoreFile: () => ipcRenderer.invoke('chooseRestoreFile'),
+  restoreDatabase: (backupPath) => ipcRenderer.invoke('restoreDatabase', backupPath),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('getSettings'),
   saveSetting: (key, value) => ipcRenderer.invoke('saveSetting', key, value),
