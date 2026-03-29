@@ -25,6 +25,7 @@ function esc(str) {
 }
 
 async function generate(docType, docId) {
+  if (docType === 'statement') return generateStatementPdf(docId);
   const isInvoice = docType === 'invoice';
   const doc = isInvoice ? db.getInvoice(docId) : db.getEstimate(docId);
   if (!doc) throw new Error(`${docType} not found: ${docId}`);
@@ -434,7 +435,31 @@ function footerHtml(props, data) {
   return html;
 }
 
+async function generateStatementPdf(stmtId) {
+  const stmt = db.getStatement(stmtId);
+  if (!stmt) throw new Error('Statement not found');
+  const client = db.getClient(stmt.client_id);
+  const settings = db.getSettings();
+  const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
+  const filename = `${clientName} Statement ${stmt.statement_number}.pdf`.replace(/[/\\:*?"<>|]/g, '').trim();
+  const html = generateStatementHtml(stmtId);
+
+  let puppeteer;
+  try { puppeteer = require('puppeteer-core'); } catch { puppeteer = require('puppeteer'); }
+  const chromePath = findChrome();
+  const browser = await puppeteer.launch({ headless: true, executablePath: chromePath || undefined, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+  const tmpDir = path.join(os.tmpdir(), 'krull-billings-pdfs');
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+  const pdfPath = path.join(tmpDir, filename);
+  await page.pdf({ path: pdfPath, format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } });
+  await browser.close();
+  return { path: pdfPath, filename };
+}
+
 function generateHtml(docType, docId) {
+  if (docType === 'statement') return generateStatementHtml(docId);
   const isInvoice = docType === 'invoice';
   const doc = isInvoice ? db.getInvoice(docId) : db.getEstimate(docId);
   if (!doc) throw new Error(`${docType} not found: ${docId}`);
@@ -468,6 +493,140 @@ function generateHtml(docType, docId) {
 
   const data = { settings, client, document: doc, lineItems, docType, currency, isPaid, docTitle: '' };
   return renderToHtml(blocks, data);
+}
+
+function generateStatementHtml(stmtId) {
+  const stmt = db.getStatement(stmtId);
+  if (!stmt) throw new Error('Statement not found');
+  const client = db.getClient(stmt.client_id);
+  if (!client) throw new Error('Client not found');
+  const settings = db.getSettings();
+  const currency = 'AUD';
+
+  const clientName = client.is_company ? (client.company || '') : `${client.first_name || ''} ${client.last_name || ''}`.trim();
+  const contactName = [client.first_name, client.last_name].filter(Boolean).join(' ');
+
+  // Logo
+  let logoHtml = '';
+  const logoPath = settings.logo_path;
+  if (logoPath && fs.existsSync(logoPath)) {
+    const ext = path.extname(logoPath).slice(1).toLowerCase();
+    const mime = ext === 'png' ? 'image/png' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
+    const b64 = fs.readFileSync(logoPath).toString('base64');
+    logoHtml = `<img src="data:${mime};base64,${b64}" style="width:80px;height:80px;object-fit:contain;" />`;
+  } else {
+    logoHtml = `<div style="width:80px;height:80px;background:#1a1a1a;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;"><div><div style="font-weight:300;font-size:11px;letter-spacing:0.25em;">K R U L L</div><div style="font-weight:700;font-size:14px;">D+A</div></div></div>`;
+  }
+
+  // Transaction rows
+  let txHtml = '';
+  for (const tx of (stmt.transactions || [])) {
+    const typeLabel = tx.type === 'invoice' ? 'Invoice' : 'Payment';
+    const invNum = tx.type === 'invoice' ? tx.number : '';
+    txHtml += `<tr style="border-bottom:1px solid #e5e7eb;">
+      <td style="padding:6px 8px;font-size:10px;">${fmtDate(tx.date)}</td>
+      <td style="padding:6px 8px;font-size:10px;">${esc(typeLabel)}</td>
+      <td style="padding:6px 8px;font-size:10px;">${esc(invNum)}</td>
+      <td style="padding:6px 8px;font-size:10px;text-align:right;">${fmt(Math.abs(tx.amount), currency)}</td>
+      <td style="padding:6px 8px;font-size:10px;text-align:right;">${fmt(tx.balance, currency)}</td>
+    </tr>`;
+  }
+
+  // Aging row
+  const a = stmt.aging || { current: 0, days30: 0, days60: 0, days90: 0, over90: 0, total: 0 };
+  const agingHtml = `
+    <table style="width:100%;border-collapse:collapse;margin-top:auto;">
+      <tr style="background:#111;color:#fff;">
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">Current</th>
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">1-30 Days</th>
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">31-60 Days</th>
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">61-90 Days</th>
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">Over 90 Days</th>
+        <th style="padding:6px 8px;font-size:9px;text-align:center;">Total</th>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;">${fmt(a.current, currency)}</td>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;">${fmt(a.days30, currency)}</td>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;">${fmt(a.days60, currency)}</td>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;">${fmt(a.days90, currency)}</td>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;">${fmt(a.over90, currency)}</td>
+        <td style="padding:6px 8px;font-size:10px;text-align:center;font-weight:700;">${fmt(a.total, currency)}</td>
+      </tr>
+    </table>`;
+
+  // Footer
+  let footerHtml = '';
+  if (settings.bank_name) {
+    footerHtml += `<div style="font-size:10px;margin-bottom:6px;"><div style="font-weight:700;margin-bottom:0;">BANKING DETAILS:</div>`;
+    footerHtml += `<table style="font-size:10px;border-collapse:collapse;line-height:1.15;">`;
+    if (settings.bank_name) footerHtml += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(settings.bank_name)}</td></tr>`;
+    if (settings.bank_account_name) footerHtml += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(settings.bank_account_name)}</td></tr>`;
+    if (settings.bank_bsb) footerHtml += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(settings.bank_bsb)}</td></tr>`;
+    if (settings.bank_account) footerHtml += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">ACCOUNT:</td><td>${esc(settings.bank_account)}</td></tr>`;
+    footerHtml += `</table></div>`;
+  }
+  const terms = settings.default_payment_terms || '14 Days';
+  footerHtml += `<div style="font-size:11px;font-weight:700;display:inline-block;vertical-align:top;margin-left:40px;">PLEASE NOTE OUR ORIGINAL TERMS WERE ${terms.toUpperCase()}</div>`;
+
+  // Business footer
+  let bizFooter = '';
+  if (settings.business_name) {
+    let line1 = `<strong>${esc(settings.business_name)}</strong>`;
+    if (settings.abn) line1 += ` &bull; <strong>ABN</strong>: ${esc(settings.abn)}`;
+    bizFooter = `<div style="font-size:9px;margin-top:8px;">${line1}`;
+    const addrParts = [settings.address_street, [settings.address_city, settings.address_state, settings.address_postcode].filter(Boolean).join(', '), settings.address_country].filter(Boolean);
+    if (addrParts.length) bizFooter += `<br>${esc(addrParts.join(', '))}`;
+    const contactParts = [];
+    if (settings.phone) contactParts.push(`<strong>T:</strong> ${esc(settings.phone)}`);
+    if (settings.email) contactParts.push(`<strong>E:</strong> ${esc(settings.email)}`);
+    if (settings.website) contactParts.push(`<strong>W:</strong> ${esc(settings.website)}`);
+    if (contactParts.length) bizFooter += `<br>${contactParts.join('&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;')}`;
+    bizFooter += `</div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Statement ${esc(stmt.statement_number)}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Gotham', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
+  @page { margin: 0; size: A4; }
+</style></head>
+<body>
+<div style="padding:30px 30px 20px 30px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div style="font-size:10px;line-height:1.4;">
+      <div>${fmtDate(stmt.statement_date)}</div>
+      <div>Statement Number ${esc(stmt.statement_number)}</div>
+      <div>Activity From ${fmtDate(stmt.period_start)} to ${fmtDate(stmt.period_end)}</div>
+    </div>
+    ${logoHtml}
+  </div>
+  <div style="margin-top:24px;font-size:11px;">
+    <div style="margin-left:24px;">TO: ${esc(clientName)}</div>
+    ${contactName !== clientName ? `<div style="margin-left:0;">ATTENTION: ${esc(contactName)}</div>` : ''}
+  </div>
+  <div style="margin-top:30px;font-size:28px;font-weight:300;letter-spacing:-0.5px;">${fmt(stmt.balance || a.total, currency)}</div>
+</div>
+<div style="flex:1;padding:20px 30px;">
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="background:#f3f4f6;">
+      <th style="padding:6px 8px;font-size:9px;text-align:left;">Date</th>
+      <th style="padding:6px 8px;font-size:9px;text-align:left;">Type</th>
+      <th style="padding:6px 8px;font-size:9px;text-align:left;">Invoice</th>
+      <th style="padding:6px 8px;font-size:9px;text-align:right;">Amount</th>
+      <th style="padding:6px 8px;font-size:9px;text-align:right;">Balance</th>
+    </tr>
+    ${txHtml}
+  </table>
+</div>
+<div style="padding:0 30px 30px 30px;margin-top:auto;">
+  ${agingHtml}
+  <div style="margin-top:20px;display:flex;align-items:flex-start;">
+    <div>${footerHtml}</div>
+  </div>
+  ${bizFooter}
+</div>
+</body></html>`;
 }
 
 module.exports = { generate, generateHtml, renderToHtml };
