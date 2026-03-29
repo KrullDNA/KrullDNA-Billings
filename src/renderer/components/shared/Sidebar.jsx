@@ -160,6 +160,7 @@ export default function Sidebar({
                   onSelectClient(client);
                   onNavigate('client');
                 }}
+                onEditClient={onEditClient}
                 onContextMenu={handleClientContextMenu}
                 onAddClient={() => onAddClient(group.id)}
                 clientDisplayName={clientDisplayName}
@@ -227,7 +228,7 @@ export default function Sidebar({
   );
 }
 
-function SortableGroup({ group, expanded, onToggle, clients, selectedClient, onSelectClient, onContextMenu, onAddClient, clientDisplayName }) {
+function SortableGroup({ group, expanded, onToggle, clients, selectedClient, onSelectClient, onEditClient, onContextMenu, onAddClient, clientDisplayName }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.id });
 
   const style = {
@@ -273,6 +274,7 @@ function SortableGroup({ group, expanded, onToggle, clients, selectedClient, onS
             <button
               key={client.id}
               onClick={() => onSelectClient(client)}
+              onDoubleClick={() => onEditClient(client)}
               onContextMenu={(e) => onContextMenu(e, client)}
               className={`w-full text-left px-3 py-1.5 text-sm rounded-md truncate ${
                 selectedClient?.id === client.id
