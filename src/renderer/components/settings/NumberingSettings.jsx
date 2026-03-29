@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const FILENAME_PLACEHOLDERS = ['%clientName%', '%projectName%', '%invNum%', '%estNum%'];
+const FILENAME_PLACEHOLDERS = ['%clientName%', '%projectName%', '%invNum%', '%estNum%', '%stmtNum%'];
 
 export default function NumberingSettings() {
   const [settings, setSettings] = useState({});
@@ -28,6 +28,7 @@ export default function NumberingSettings() {
         statement_next_number: settings.statement_next_number || '1',
         invoice_filename_pattern: settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%',
         estimate_filename_pattern: settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%',
+        statement_filename_pattern: settings.statement_filename_pattern || '%clientName% Statement %stmtNum%',
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -45,10 +46,14 @@ export default function NumberingSettings() {
   const invoicePreview = `${settings.invoice_prefix || ''}${settings.invoice_next_number || '1001'}`;
   const estimatePreview = `${settings.estimate_prefix || ''}${settings.estimate_next_number || '1001'}`;
 
+  const statementPreview = `${settings.statement_prefix || ''}${settings.statement_next_number || '1'}`;
+
   const invFilenamePreview = (settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%')
     .replace('%clientName%', 'AcmeCo').replace('%projectName%', 'Website').replace('%invNum%', invoicePreview);
   const estFilenamePreview = (settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%')
     .replace('%clientName%', 'AcmeCo').replace('%projectName%', 'Website').replace('%estNum%', estimatePreview);
+  const stmtFilenamePreview = (settings.statement_filename_pattern || '%clientName% Statement %stmtNum%')
+    .replace('%clientName%', 'AcmeCo').replace('%projectName%', '').replace('%stmtNum%', statementPreview).replace(/\s+/g, ' ').trim();
 
   return (
     <div className="max-w-lg space-y-6">
@@ -120,6 +125,11 @@ export default function NumberingSettings() {
           <label className="block text-xs font-medium text-gray-500 mb-1">Estimate Filename</label>
           <input value={settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%'} onChange={(e) => update('estimate_filename_pattern', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
           <p className="text-[10px] text-gray-400 mt-1">Preview: <span className="font-mono text-gray-600">{estFilenamePreview}.pdf</span></p>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Statement Filename</label>
+          <input value={settings.statement_filename_pattern || '%clientName% Statement %stmtNum%'} onChange={(e) => update('statement_filename_pattern', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          <p className="text-[10px] text-gray-400 mt-1">Preview: <span className="font-mono text-gray-600">{stmtFilenamePreview}.pdf</span></p>
         </div>
         <div className="bg-gray-50 rounded p-2">
           <p className="text-[10px] text-gray-500">Placeholders: {FILENAME_PLACEHOLDERS.map((p) => <code key={p} className="bg-gray-200 px-1 py-0.5 rounded mx-0.5">{p}</code>)}</p>
