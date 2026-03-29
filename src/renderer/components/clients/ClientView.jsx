@@ -559,7 +559,6 @@ function DocumentDetail({ item, currency, settings, onAddPayment }) {
             srcDoc={pdfHtml}
             style={{ width: 595, height: 842, border: 'none' }}
             title="Document preview"
-            sandbox="allow-same-origin"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-sm text-gray-400">Loading preview...</div>
