@@ -24,6 +24,8 @@ export default function NumberingSettings() {
         invoice_next_number: settings.invoice_next_number || '1001',
         estimate_prefix: settings.estimate_prefix || '',
         estimate_next_number: settings.estimate_next_number || '1001',
+        statement_prefix: settings.statement_prefix || '',
+        statement_next_number: settings.statement_next_number || '1',
         invoice_filename_pattern: settings.invoice_filename_pattern || '%clientName% %projectName% Invoice %invNum%',
         estimate_filename_pattern: settings.estimate_filename_pattern || '%clientName% %projectName% Estimate %estNum%',
       });
@@ -88,6 +90,22 @@ export default function NumberingSettings() {
           <span className="text-xs text-gray-500">Preview: <span className="font-mono text-gray-700">{estimatePreview}</span></span>
           <button onClick={resetEstimateNumber} className="text-[10px] text-red-500 hover:text-red-600">Reset to 1001</button>
         </div>
+      </fieldset>
+
+      {/* Statements */}
+      <fieldset className="border border-gray-200 rounded-md p-4 space-y-3">
+        <legend className="text-xs font-semibold text-gray-500 px-1 uppercase">Statements</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Prefix</label>
+            <input value={settings.statement_prefix || ''} onChange={(e) => update('statement_prefix', e.target.value)} placeholder="e.g. STMT-" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Next Number</label>
+            <input type="number" value={settings.statement_next_number || ''} onChange={(e) => update('statement_next_number', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+          </div>
+        </div>
+        <span className="text-xs text-gray-500">Preview: <span className="font-mono text-gray-700">{`${settings.statement_prefix || ''}${settings.statement_next_number || '1'}`}</span></span>
       </fieldset>
 
       {/* PDF Filename Patterns */}

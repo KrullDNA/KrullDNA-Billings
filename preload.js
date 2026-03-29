@@ -90,6 +90,12 @@ contextBridge.exposeInMainWorld('api', {
   chooseRestoreFile: () => ipcRenderer.invoke('chooseRestoreFile'),
   restoreDatabase: (backupPath) => ipcRenderer.invoke('restoreDatabase', backupPath),
 
+  // Statements
+  getStatements: (clientId) => ipcRenderer.invoke('getStatements', clientId),
+  getStatement: (id) => ipcRenderer.invoke('getStatement', id),
+  createStatement: (data) => ipcRenderer.invoke('createStatement', data),
+  deleteStatement: (id) => ipcRenderer.invoke('deleteStatement', id),
+
   // Import
   chooseBilingsProDb: () => ipcRenderer.invoke('chooseBilingsProDb'),
   importBillingsPro: (dbPath) => ipcRenderer.invoke('importBillingsPro', dbPath),

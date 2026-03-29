@@ -4,7 +4,8 @@ const db = require('./db');
 
 async function send(docType, docId, opts) {
   const isInvoice = docType === 'invoice';
-  const doc = isInvoice ? db.getInvoice(docId) : db.getEstimate(docId);
+  const isStatement = docType === 'statement';
+  const doc = isStatement ? db.getStatement(docId) : isInvoice ? db.getInvoice(docId) : db.getEstimate(docId);
   if (!doc) throw new Error(`${docType} not found`);
 
   const client = db.getClient(doc.client_id);
@@ -12,7 +13,7 @@ async function send(docType, docId, opts) {
 
   const settings = db.getSettings();
   const clientName = client.is_company ? client.company : `${client.first_name} ${client.last_name}`;
-  const docNumber = isInvoice ? doc.invoice_number : doc.estimate_number;
+  const docNumber = isStatement ? doc.statement_number : isInvoice ? doc.invoice_number : doc.estimate_number;
 
   // Generate PDF first
   const pdf = require('./pdf');
@@ -33,12 +34,16 @@ async function send(docType, docId, opts) {
     return r;
   }
 
-  const defaultSubject = isInvoice
-    ? (settings.email_invoice_subject || 'Invoice {document_number} from {business_name}')
-    : (settings.email_estimate_subject || 'Estimate {document_number} from {business_name}');
-  const defaultBody = isInvoice
-    ? (settings.email_invoice_body || 'Please find attached invoice {document_number} for ${total}.\n\nKind regards,\n{business_name}')
-    : (settings.email_estimate_body || 'Please find attached estimate {document_number} for ${total}.\n\nKind regards,\n{business_name}');
+  const defaultSubject = isStatement
+    ? (settings.email_statement_subject || 'Statement {document_number} from {business_name}')
+    : isInvoice
+      ? (settings.email_invoice_subject || 'Invoice {document_number} from {business_name}')
+      : (settings.email_estimate_subject || 'Estimate {document_number} from {business_name}');
+  const defaultBody = isStatement
+    ? (settings.email_statement_body || 'Please find attached your account statement {document_number}.\n\nKind regards,\n{business_name}')
+    : isInvoice
+      ? (settings.email_invoice_body || 'Please find attached invoice {document_number} for ${total}.\n\nKind regards,\n{business_name}')
+      : (settings.email_estimate_body || 'Please find attached estimate {document_number} for ${total}.\n\nKind regards,\n{business_name}');
 
   const to = opts?.to || client.email || '';
   const subject = resolve(opts?.subject || defaultSubject);
@@ -73,7 +78,9 @@ async function send(docType, docId, opts) {
   }
 
   // Update sent_at on document
-  if (isInvoice) {
+  if (isStatement) {
+    // No status change for statements
+  } else if (isInvoice) {
     db.updateInvoiceStatus(docId, 'sent');
   } else {
     db.updateEstimateStatus(docId, 'sent');

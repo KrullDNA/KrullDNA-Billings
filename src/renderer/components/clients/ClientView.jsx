@@ -3,6 +3,7 @@ import ProjectForm from '../projects/ProjectForm';
 import LineItemForm from '../lineitems/LineItemForm';
 import InvoiceModal from '../invoices/InvoiceModal';
 import EstimateModal from '../estimates/EstimateModal';
+import StatementModal from '../statements/StatementModal';
 import AddPayment from '../payments/AddPayment';
 import PaymentReceipt from '../payments/PaymentReceipt';
 
@@ -293,6 +294,7 @@ function AccountTab({ client, currency, onRefresh }) {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [statementModalOpen, setStatementModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [settings, setSettings] = useState({});
   const [contextMenu, setContextMenu] = useState(null); // { x, y, tx }
@@ -439,7 +441,7 @@ function AccountTab({ client, currency, onRefresh }) {
         <div className="border-t border-gray-200 p-3 space-y-2">
           <div className="flex gap-2">
             <button onClick={() => handleAddPayment(selectedItem?.type === 'invoice' ? selectedItem.data : null)} className="flex-1 px-3 py-1.5 text-xs text-white bg-brand-600 hover:bg-brand-700 rounded-md font-medium">Add Payment</button>
-            <button className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-md border border-gray-200" disabled>Send Statement</button>
+            <button onClick={() => setStatementModalOpen(true)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md border border-gray-200">Send Statement</button>
           </div>
           <div className="flex justify-between text-xs text-gray-500 px-1">
             <span>Retainer: {formatCurrency(retainerBalance, currency)}</span>
@@ -472,6 +474,13 @@ function AccountTab({ client, currency, onRefresh }) {
         payment={receiptData}
         businessName={settings.business_name}
         currency={currency}
+      />
+
+      <StatementModal
+        open={statementModalOpen}
+        onClose={() => setStatementModalOpen(false)}
+        client={client}
+        onCreated={async () => { await loadAccountData(); onRefresh(); }}
       />
 
       {/* Context Menu */}

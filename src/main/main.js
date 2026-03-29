@@ -154,6 +154,12 @@ function registerIpcHandlers() {
   ipcMain.handle('addPayment', (_, data) => db.addPayment(data));
   ipcMain.handle('getPaymentReceipt', (_, paymentId) => db.getPaymentReceipt(paymentId));
 
+  // Statements
+  ipcMain.handle('getStatements', (_, clientId) => db.getStatements(clientId));
+  ipcMain.handle('getStatement', (_, id) => db.getStatement(id));
+  ipcMain.handle('createStatement', (_, data) => db.createStatement(data));
+  ipcMain.handle('deleteStatement', (_, id) => db.deleteStatement(id));
+
   // Templates
   ipcMain.handle('getTemplates', (_, type) => db.getTemplates(type));
   ipcMain.handle('getTemplate', (_, id) => db.getTemplate(id));

@@ -194,6 +194,20 @@ function createTables() {
       sort_order INTEGER DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS statements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER REFERENCES clients(id),
+      statement_number TEXT UNIQUE NOT NULL,
+      statement_date TEXT,
+      period_start TEXT,
+      period_end TEXT,
+      balance REAL DEFAULT 0,
+      notes TEXT,
+      sent_at TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       client_id INTEGER REFERENCES clients(id),
@@ -725,6 +739,78 @@ function deleteEstimateAndRestore(id) {
   }
 }
 
+// ── Statements ──
+
+function getStatements(clientId) {
+  return db.prepare('SELECT * FROM statements WHERE client_id = ? ORDER BY created_at DESC').all(clientId);
+}
+
+function getStatement(id) {
+  const stmt = db.prepare('SELECT * FROM statements WHERE id = ?').get(id);
+  if (!stmt) return null;
+  // Get all transactions in the period
+  const invoices = db.prepare(`
+    SELECT 'invoice' as type, invoice_number as number, invoice_date as date, total as amount
+    FROM invoices WHERE client_id = ? AND invoice_date >= ? AND invoice_date <= ? AND status != 'cancelled'
+    ORDER BY invoice_date
+  `).all(stmt.client_id, stmt.period_start, stmt.period_end);
+  const payments = db.prepare(`
+    SELECT 'payment' as type, 'Payment' as number, payment_date as date, -amount as amount
+    FROM payments WHERE client_id = ? AND payment_date >= ? AND payment_date <= ?
+    ORDER BY payment_date
+  `).all(stmt.client_id, stmt.period_start, stmt.period_end);
+  stmt.transactions = [...invoices, ...payments].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Calculate running balance
+  let bal = 0;
+  for (const tx of stmt.transactions) {
+    bal += tx.amount;
+    tx.balance = bal;
+  }
+  stmt.balance = bal;
+  // Aging buckets
+  const today = new Date(stmt.statement_date || new Date().toISOString().slice(0, 10));
+  const outstanding = db.prepare(`
+    SELECT i.invoice_date, i.total,
+      COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as paid
+    FROM invoices i WHERE i.client_id = ? AND i.status IN ('sent', 'overdue') AND i.status != 'cancelled'
+  `).all(stmt.client_id);
+  let current = 0, days30 = 0, days60 = 0, days90 = 0, over90 = 0;
+  for (const inv of outstanding) {
+    const owed = inv.total - inv.paid;
+    if (owed <= 0) continue;
+    const invDate = new Date(inv.invoice_date);
+    const diffDays = Math.floor((today - invDate) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) current += owed;
+    else if (diffDays <= 30) days30 += owed;
+    else if (diffDays <= 60) days60 += owed;
+    else if (diffDays <= 90) days90 += owed;
+    else over90 += owed;
+  }
+  stmt.aging = { current, days30, days60, days90, over90, total: current + days30 + days60 + days90 + over90 };
+  return stmt;
+}
+
+function createStatement(data) {
+  const nextNum = getSettingValue('statement_next_number') || '1';
+  const prefix = getSettingValue('statement_prefix') || '';
+  const statementNumber = `${prefix}${nextNum}`;
+
+  const result = db.prepare(`
+    INSERT INTO statements (client_id, statement_number, statement_date, period_start, period_end, balance, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    data.client_id, statementNumber, data.statement_date,
+    data.period_start, data.period_end, data.balance || 0, data.notes || null
+  );
+
+  saveSetting('statement_next_number', String(parseInt(nextNum) + 1));
+  return result.lastInsertRowid;
+}
+
+function deleteStatement(id) {
+  db.prepare('DELETE FROM statements WHERE id = ?').run(id);
+}
+
 // ── Payments ──
 
 function getPayments(clientId) {
@@ -938,6 +1024,8 @@ module.exports = {
   getInvoices, getInvoice, createInvoice, updateInvoice, updateInvoiceStatus, deleteInvoice, deleteInvoiceAndRestore, convertEstimateToInvoice,
   // Estimates
   getEstimates, getEstimate, createEstimate, updateEstimate, updateEstimateStatus, deleteEstimate, deleteEstimateAndRestore,
+  // Statements
+  getStatements, getStatement, createStatement, deleteStatement,
   // Payments
   getPayments, addPayment, getPaymentReceipt,
   // Templates
