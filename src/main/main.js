@@ -244,6 +244,20 @@ function registerIpcHandlers() {
     db.initDatabase();
     return true;
   });
+  ipcMain.handle('chooseBilingsProDb', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select BillingsPro database (billingspro.bid)',
+      filters: [{ name: 'BillingsPro Database', extensions: ['bid', 'db'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
+  });
+  ipcMain.handle('importBillingsPro', async (_, bpDbPath) => {
+    if (!bpDbPath || !fs.existsSync(bpDbPath)) throw new Error('BillingsPro database not found');
+    const { importBillingsPro } = require('../../scripts/import-billingspro');
+    return importBillingsPro(bpDbPath, db.getDb());
+  });
 
   // Settings
   ipcMain.handle('getSettings', () => db.getSettings());
