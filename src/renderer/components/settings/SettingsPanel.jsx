@@ -9,6 +9,7 @@ import EmailSettings from './EmailSettings';
 import CategoriesSettings from './CategoriesSettings';
 import ClientGroupsSettings from './ClientGroupsSettings';
 import PaymentMethodsSettings from './PaymentMethodsSettings';
+import BackupSettings from './BackupSettings';
 
 const TABS = [
   { id: 'general', label: 'General', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'numbering', label: 'Numbering', icon: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14' },
   { id: 'labels', label: 'Labels', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z' },
   { id: 'email', label: 'Email / SMTP', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+  { id: 'backup', label: 'Backup & Restore', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' },
 ];
 
 export default function SettingsPanel() {
@@ -57,6 +59,7 @@ export default function SettingsPanel() {
         {activeTab === 'templates' && <TemplatesSettings />}
         {activeTab === 'numbering' && <NumberingSettings />}
         {activeTab === 'email' && <EmailSettings />}
+        {activeTab === 'backup' && <BackupSettings />}
         {activeTab === 'labels' && (
           <div>
             <div className="flex items-center gap-1 mb-6 border-b border-gray-200">

@@ -885,7 +885,7 @@ function getTaxCollected(startDate, endDate) {
 }
 
 module.exports = {
-  initDatabase, getDb,
+  initDatabase, getDb, getDbPath,
   // Client Groups
   getClientGroups, saveClientGroup, deleteClientGroup, reorderClientGroups,
   // Clients

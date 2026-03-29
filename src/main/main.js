@@ -191,6 +191,47 @@ function registerIpcHandlers() {
     return null;
   });
 
+  // Backup & Restore
+  ipcMain.handle('chooseBackupFolder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Choose backup folder',
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
+  });
+  ipcMain.handle('backupDatabase', async (_, folderPath) => {
+    const dbPath = db.getDbPath();
+    if (!folderPath) throw new Error('No backup folder specified');
+    if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `krull-billings-backup-${timestamp}.db`;
+    const dest = path.join(folderPath, filename);
+    fs.copyFileSync(dbPath, dest);
+    return { path: dest, filename };
+  });
+  ipcMain.handle('chooseRestoreFile', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select backup file to restore',
+      filters: [{ name: 'Database', extensions: ['db'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
+  });
+  ipcMain.handle('restoreDatabase', async (_, backupPath) => {
+    if (!backupPath || !fs.existsSync(backupPath)) throw new Error('Backup file not found');
+    const dbPath = db.getDbPath();
+    // Save a safety copy before restoring
+    const safetyPath = dbPath + '.pre-restore';
+    fs.copyFileSync(dbPath, safetyPath);
+    // Close current DB, copy backup over, reinitialise
+    db.getDb().close();
+    fs.copyFileSync(backupPath, dbPath);
+    db.initDatabase();
+    return true;
+  });
+
   // Settings
   ipcMain.handle('getSettings', () => db.getSettings());
   ipcMain.handle('saveSetting', (_, key, value) => db.saveSetting(key, value));
