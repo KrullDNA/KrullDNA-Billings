@@ -322,6 +322,7 @@ function totalsHtml(props, data) {
 
   rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 12px 6px 0;font-weight:700;font-size:11px;width:110px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
+  rows += `<div style="height:20px;"></div>`;
   return rows;
 }
 
