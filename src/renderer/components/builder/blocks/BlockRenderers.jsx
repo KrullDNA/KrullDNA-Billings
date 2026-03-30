@@ -159,7 +159,7 @@ function LineItemsBlock({ props, data, style }) {
               )}
               <div style={{ fontSize: 11, color: '#000' }}>{item.name}</div>
               {item.notes && (
-                <div style={{ fontSize: 9, color: '#333', marginTop: 3, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{item.notes}</div>
+                <div style={{ fontSize: 9, color: '#333', marginTop: 3, lineHeight: 1.1, whiteSpace: 'pre-wrap' }}>{item.notes}</div>
               )}
             </div>
             <div style={{ fontSize: 11, textAlign: 'right', width: 110, paddingRight: 12, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
