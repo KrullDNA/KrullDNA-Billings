@@ -183,7 +183,7 @@ function TotalsBlock({ props, data, style }) {
 
   return (
     <div style={{ ...style }}>
-      <hr style={{ border: 'none', borderTop: '1px solid #111', marginBottom: 0 }} />
+      <hr style={{ border: 'none', borderTop: '2px solid #111', marginBottom: 0 }} />
       <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
         <tbody>
           {props.showSubtotal && (
@@ -202,8 +202,8 @@ function TotalsBlock({ props, data, style }) {
             <TotalsRow label="RETAINER" value={`-${fmt(doc.retainer_applied, currency)}`} />
           )}
           <tr style={{ backgroundColor: '#111', color: '#fff' }}>
-            <td style={{ textAlign: 'right', padding: '6px 12px', fontWeight: 700, fontSize: 11 }}>TOTAL</td>
-            <td style={{ textAlign: 'right', padding: '6px 12px 6px 0', fontWeight: 700, fontSize: 11, width: 110, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
+            <td style={{ textAlign: 'right', padding: '8px 12px', fontWeight: 700, fontSize: 11 }}>TOTAL</td>
+            <td style={{ textAlign: 'right', padding: '8px 16px 8px 12px', fontWeight: 700, fontSize: 11, width: 130, fontVariantNumeric: 'tabular-nums' }}>{fmt(doc.total, currency)}</td>
           </tr>
         </tbody>
       </table>
@@ -213,9 +213,9 @@ function TotalsBlock({ props, data, style }) {
 
 function TotalsRow({ label, value }) {
   return (
-    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-      <td style={{ textAlign: 'right', padding: '5px 12px', color: '#000', fontSize: 11 }}>{label}</td>
-      <td style={{ textAlign: 'right', padding: '5px 12px 5px 0', fontSize: 11, width: 110, fontVariantNumeric: 'tabular-nums' }}>{value}</td>
+    <tr>
+      <td style={{ textAlign: 'right', padding: '6px 12px', color: '#000', fontSize: 11 }}>{label}</td>
+      <td style={{ textAlign: 'right', padding: '6px 16px 6px 12px', fontSize: 11, width: 130, fontVariantNumeric: 'tabular-nums', borderLeft: '1px solid #111' }}>{value}</td>
     </tr>
   );
 }

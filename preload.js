@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
   createLineItem: (data) => ipcRenderer.invoke('createLineItem', data),
   updateLineItem: (id, data) => ipcRenderer.invoke('updateLineItem', id, data),
   deleteLineItem: (id) => ipcRenderer.invoke('deleteLineItem', id),
+  reorderLineItems: (orderedIds) => ipcRenderer.invoke('reorderLineItems', orderedIds),
   markLineItemsInvoiced: (ids) => ipcRenderer.invoke('markLineItemsInvoiced', ids),
 
   // Categories

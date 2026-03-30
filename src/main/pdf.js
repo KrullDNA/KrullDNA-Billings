@@ -148,9 +148,9 @@ function renderToHtml(blocks, data) {
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 0; size: A4; }
-  .page-header { padding: 30px 30px 20px 30px; }
-  .page-content { flex: 0 0 auto; padding: 0 30px; }
-  .page-bottom { margin-top: auto; padding: 0 30px 30px 30px; }
+  .page-header { padding: 30px 60px 20px 60px; }
+  .page-content { flex: 0 0 auto; padding: 0 60px; }
+  .page-bottom { margin-top: auto; padding: 0 60px 30px 60px; }
 </style>
 </head>
 <body>
@@ -292,7 +292,7 @@ function totalsHtml(props, data) {
   const currency = data.currency || 'AUD';
 
   let rows = '';
-  rows += `<hr style="border:none;border-top:1px solid #111;margin-bottom:0;" />`;
+  rows += `<hr style="border:none;border-top:2px solid #111;margin-bottom:0;" />`;
   rows += `<table style="width:100%;font-size:11px;border-collapse:collapse;">`;
   if (props.showSubtotal) rows += totalsRowHtml('SUBTOTAL', fmt(doc.subtotal, currency));
   if (props.showMarkup && (doc.markup_total || 0) > 0) rows += totalsRowHtml('MARKUP', fmt(doc.markup_total, currency));
@@ -300,14 +300,14 @@ function totalsHtml(props, data) {
   if (props.showTax && (doc.tax_total || 0) > 0) rows += totalsRowHtml('GST 10%', fmt(doc.tax_total, currency));
   if (props.showRetainer && (doc.retainer_applied || 0) > 0) rows += totalsRowHtml('RETAINER', `-${fmt(doc.retainer_applied, currency)}`);
 
-  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:6px 12px 6px 0;font-weight:700;font-size:11px;width:110px;">${fmt(doc.total, currency)}</td></tr>`;
+  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:8px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:8px 16px 8px 12px;font-weight:700;font-size:11px;width:130px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
   rows += `<div style="height:20px;"></div>`;
   return rows;
 }
 
 function totalsRowHtml(label, value) {
-  return `<tr style="border-bottom:1px solid #e5e7eb;"><td style="text-align:right;padding:5px 12px;color:#000;font-size:11px;">${label}</td><td style="text-align:right;padding:5px 12px 5px 0;font-size:11px;width:110px;">${value}</td></tr>`;
+  return `<tr><td style="text-align:right;padding:6px 12px;color:#000;font-size:11px;">${label}</td><td style="text-align:right;padding:6px 16px 6px 12px;font-size:11px;width:130px;border-left:1px solid #111;">${value}</td></tr>`;
 }
 
 function notesHtml(props, data) {

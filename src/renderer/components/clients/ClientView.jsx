@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import ProjectForm from '../projects/ProjectForm';
 import LineItemForm from '../lineitems/LineItemForm';
 import InvoiceModal from '../invoices/InvoiceModal';
@@ -114,6 +117,10 @@ export default function ClientView({ client, newProjectRequested }) {
             onSendInvoice={() => setInvoiceModalOpen(true)}
             onSendEstimate={() => setEstimateModalOpen(true)}
             currency={currency}
+            onReorderLineItems={async (orderedIds) => {
+              await window.api.reorderLineItems(orderedIds);
+              loadLineItems();
+            }}
           />
         )}
         {activeTab === 'account' && (
@@ -150,7 +157,7 @@ function TabButton({ label, active, onClick }) {
 
 // ── Projects Tab ──
 
-function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency }) {
+function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency, onReorderLineItems }) {
   const unbilledItems = lineItems.filter((i) => i.status === 'unbilled');
   const estimateItems = lineItems.filter((i) => i.status === 'unbilled' || i.status === 'invoiced');
   const workingItems = lineItems.filter((i) => i.status === 'invoiced' || i.status === 'working');
@@ -211,23 +218,14 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto">
-              <div className="sticky top-0 bg-gray-50 grid grid-cols-[60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                <span>Kind</span><span>Name</span><span className="text-right">Date Due</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Total</span><span /><span />
-              </div>
-              {displayItems.length === 0 ? (
-                <div className="px-6 py-6 text-center text-sm text-gray-400">{lineItemFilter === 'estimate' ? 'No estimate line items.' : 'No line items yet.'}</div>
-              ) : displayItems.map((item) => (
-                <LineItemRow
-                  key={item.id}
-                  item={item}
-                  currency={currency}
-                  onClick={() => onEditLineItem(item)}
-                  showStartWorking={lineItemFilter === 'estimate'}
-                  onStartWorking={() => handleStartWorking(item)}
-                />
-              ))}
-            </div>
+            <SortableLineItemList
+              displayItems={displayItems}
+              currency={currency}
+              lineItemFilter={lineItemFilter}
+              onEditLineItem={onEditLineItem}
+              handleStartWorking={handleStartWorking}
+              onReorderLineItems={onReorderLineItems}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a project to view its line items</div>
@@ -237,11 +235,63 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
   );
 }
 
-function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking }) {
+function SortableLineItemList({ displayItems, currency, lineItemFilter, onEditLineItem, handleStartWorking, onReorderLineItems }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = displayItems.findIndex((i) => i.id === active.id);
+    const newIndex = displayItems.findIndex((i) => i.id === over.id);
+    const reordered = arrayMove(displayItems, oldIndex, newIndex);
+    onReorderLineItems(reordered.map((i) => i.id));
+  }
+
+  return (
+    <div className="flex-1 overflow-auto">
+      <div className="sticky top-0 bg-gray-50 grid grid-cols-[20px_60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+        <span /><span>Kind</span><span>Name</span><span className="text-right">Date Due</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Total</span><span /><span />
+      </div>
+      {displayItems.length === 0 ? (
+        <div className="px-6 py-6 text-center text-sm text-gray-400">{lineItemFilter === 'estimate' ? 'No estimate line items.' : 'No line items yet.'}</div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={displayItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            {displayItems.map((item) => (
+              <SortableLineItemRow
+                key={item.id}
+                item={item}
+                currency={currency}
+                onClick={() => onEditLineItem(item)}
+                showStartWorking={lineItemFilter === 'estimate'}
+                onStartWorking={() => handleStartWorking(item)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
+  );
+}
+
+function SortableLineItemRow(props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <LineItemRow {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
+function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking, dragHandleProps }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <>
-      <div className="grid grid-cols-[60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick}>
+      <div className="grid grid-cols-[20px_60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick}>
+        <span className="flex items-center justify-center cursor-grab text-gray-300 hover:text-gray-500" onClick={(e) => e.stopPropagation()} {...dragHandleProps}>
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></svg>
+        </span>
         <span>
           <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${item.kind === 'hourly' ? 'bg-blue-100 text-blue-700' : item.kind === 'mileage' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
             {item.kind === 'hourly' ? 'Hourly' : item.kind === 'mileage' ? 'Mileage' : 'Fixed'}

@@ -117,6 +117,7 @@ function registerIpcHandlers() {
   ipcMain.handle('createLineItem', (_, data) => db.createLineItem(data));
   ipcMain.handle('updateLineItem', (_, id, data) => db.updateLineItem(id, data));
   ipcMain.handle('deleteLineItem', (_, id) => db.deleteLineItem(id));
+  ipcMain.handle('reorderLineItems', (_, orderedIds) => db.reorderLineItems(orderedIds));
   ipcMain.handle('markLineItemsInvoiced', (_, ids) => db.markLineItemsInvoiced(ids));
 
   // Categories
