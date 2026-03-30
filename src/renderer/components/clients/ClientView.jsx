@@ -160,7 +160,7 @@ function TabButton({ label, active, onClick }) {
 
 function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency, onReorderLineItems, onRefresh }) {
   const unbilledItems = lineItems.filter((i) => i.status === 'unbilled');
-  const estimateItems = lineItems.filter((i) => i.status === 'unbilled' || i.status === 'invoiced');
+  const estimateItems = lineItems.filter((i) => i.status === 'unbilled' || i.status === 'invoiced' || i.status === 'working');
   const workingItems = lineItems.filter((i) => i.status === 'working' || i.status === 'invoiced');
   const displayItems = lineItemFilter === 'estimate' ? estimateItems : workingItems;
   const hasEstimateItems = unbilledItems.length > 0;
