@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DocumentRenderer } from '../builder/Builder';
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
-const TERMS_OPTIONS = ['7 Days', '14 Days', '21 Days', '30 Days', '60 Days', 'Custom'];
+const TERMS_OPTIONS = ['COD', '7 Days', '14 Days', '21 Days', '30 Days', '60 Days', 'Custom'];
 
 function formatCurrency(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';
@@ -16,6 +16,7 @@ function addDays(dateStr, days) {
 }
 
 function termsToDays(terms) {
+  if (terms === 'COD') return 0;
   const match = terms?.match(/(\d+)\s*Days/i);
   return match ? parseInt(match[1]) : 14;
 }
