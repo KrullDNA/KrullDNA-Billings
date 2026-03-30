@@ -277,7 +277,7 @@ function lineItemsHtml(props, data) {
     html += `<div style="flex:1;padding-right:16px;">`;
     if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
     html += `<div style="font-size:11px;color:#000;">${esc(item.name)}</div>`;
-    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
+    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;white-space:pre-wrap;">${esc(item.notes)}</div>`;
     html += `</div>`;
     html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.subtotal || item.total, currency)}</div>`;
     html += `</div>`;
