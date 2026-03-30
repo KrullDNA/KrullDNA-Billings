@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../shared/Modal';
 
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 function formatCurrency(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';
@@ -11,7 +16,7 @@ export default function AddPayment({ open, onClose, client, invoice, currency, o
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Electronic');
   const [methods, setMethods] = useState(['Electronic', 'Cash', 'Cheque', 'Credit Card', 'Bank Transfer']);
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentDate, setPaymentDate] = useState(localDate());
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -27,7 +32,7 @@ export default function AddPayment({ open, onClose, client, invoice, currency, o
         setAmount(outstanding > 0 ? outstanding.toFixed(2) : '');
       }
       setMethod('Electronic');
-      setPaymentDate(new Date().toISOString().slice(0, 10));
+      setPaymentDate(localDate());
       setNotes('');
     }
   }, [open, invoice]);

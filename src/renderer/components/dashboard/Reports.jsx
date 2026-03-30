@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 
 function fmt(a) { return `$${(a || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function cn(r) { return r.is_company ? r.company : [r.first_name, r.last_name].filter(Boolean).join(' '); }
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
-const today = new Date().toISOString().slice(0, 10);
+const today = localDate();
 const monthStart = today.slice(0, 8) + '01';
 
 export default function Reports() {

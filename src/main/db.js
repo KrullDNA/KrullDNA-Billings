@@ -757,7 +757,7 @@ function updateInvoice(id, data) {
 
 function updateInvoiceStatus(id, status) {
   const updates = { status };
-  if (status === 'paid') updates.paid_date = new Date().toISOString().slice(0, 10);
+  if (status === 'paid') { const d = new Date(); updates.paid_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
   if (status === 'sent') updates.sent_at = new Date().toISOString();
   const sets = Object.keys(updates).map((k) => `${k} = ?`).join(', ');
   db.prepare(`UPDATE invoices SET ${sets}, updated_at = datetime('now') WHERE id = ?`).run(...Object.values(updates), id);
@@ -789,7 +789,7 @@ function convertEstimateToInvoice(estimateId) {
     client_id: est.client_id,
     project_id: est.project_id,
     currency: est.currency,
-    invoice_date: new Date().toISOString().slice(0, 10),
+    invoice_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
     template_id: est.template_id,
     notes: est.notes,
   }, lineItemIds);
@@ -911,7 +911,7 @@ function getStatement(id) {
   }
   stmt.balance = bal;
   // Aging buckets
-  const today = new Date(stmt.statement_date || new Date().toISOString().slice(0, 10));
+  const today = new Date(stmt.statement_date || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })());
   const outstanding = db.prepare(`
     SELECT i.invoice_date, i.total,
       COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as paid

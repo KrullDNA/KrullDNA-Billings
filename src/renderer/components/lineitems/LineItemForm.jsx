@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 
 function formatCurrency(amount, currency = 'AUD') {
@@ -19,7 +24,7 @@ const emptyForm = {
   discount_pct: 0,
   tax_id: null,
   notes: '',
-  date: new Date().toISOString().slice(0, 10),
+  date: localDate(),
   status: 'unbilled',
 };
 
@@ -51,16 +56,16 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
         discount_pct: lineItem.discount_pct || 0,
         tax_id: lineItem.tax_id || null,
         notes: lineItem.notes || '',
-        date: lineItem.date || new Date().toISOString().slice(0, 10),
+        date: lineItem.date || localDate(),
         status: lineItem.status || 'unbilled',
       });
       setStartedChecked(false);
       setCompletedChecked(false);
     } else {
-      setForm({ ...emptyForm, date: new Date().toISOString().slice(0, 10) });
+      setForm({ ...emptyForm, date: localDate() });
       setStartedChecked(false);
       setCompletedChecked(false);
-      setStartedDate(new Date().toISOString().slice(0, 10));
+      setStartedDate(localDate());
       setCompletedDate('');
     }
     setActiveTab('details');
@@ -310,7 +315,7 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
                       checked={startedChecked}
                       onChange={(e) => {
                         setStartedChecked(e.target.checked);
-                        if (e.target.checked && !startedDate) setStartedDate(new Date().toISOString().slice(0, 10));
+                        if (e.target.checked && !startedDate) setStartedDate(localDate());
                       }}
                       className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                     />
@@ -332,7 +337,7 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
                       checked={completedChecked}
                       onChange={(e) => {
                         setCompletedChecked(e.target.checked);
-                        if (e.target.checked && !completedDate) setCompletedDate(new Date().toISOString().slice(0, 10));
+                        if (e.target.checked && !completedDate) setCompletedDate(localDate());
                       }}
                       className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                     />
