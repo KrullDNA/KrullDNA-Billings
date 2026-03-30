@@ -87,13 +87,23 @@ export default function Sidebar({
 
   useEffect(() => {
     loadClients();
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem('sidebar_expanded') || '{}'); } catch {}
-    const expanded = {};
-    for (const group of clientGroups) {
-      expanded[group.id] = saved[group.id] !== undefined ? saved[group.id] : (expandedGroups[group.id] !== undefined ? expandedGroups[group.id] : false);
+    async function restoreExpanded() {
+      let saved = {};
+      try {
+        const settings = await window.api.getSettings();
+        if (settings.sidebar_expanded) saved = JSON.parse(settings.sidebar_expanded);
+      } catch {}
+      // Also try localStorage as fallback
+      if (Object.keys(saved).length === 0) {
+        try { saved = JSON.parse(localStorage.getItem('sidebar_expanded') || '{}'); } catch {}
+      }
+      const expanded = {};
+      for (const group of clientGroups) {
+        expanded[group.id] = saved[group.id] !== undefined ? saved[group.id] : false;
+      }
+      setExpandedGroups(expanded);
     }
-    setExpandedGroups(expanded);
+    if (clientGroups.length > 0) restoreExpanded();
   }, [clientGroups]);
 
   useEffect(() => { loadClients(); }, [selectedClient?.id, selectedClient?.group_id]);
@@ -122,7 +132,9 @@ export default function Sidebar({
   function toggleGroup(groupId) {
     setExpandedGroups((prev) => {
       const next = { ...prev, [groupId]: !prev[groupId] };
-      try { localStorage.setItem('sidebar_expanded', JSON.stringify(next)); } catch {}
+      const json = JSON.stringify(next);
+      try { localStorage.setItem('sidebar_expanded', json); } catch {}
+      try { window.api.saveSetting('sidebar_expanded', json); } catch {}
       return next;
     });
   }
