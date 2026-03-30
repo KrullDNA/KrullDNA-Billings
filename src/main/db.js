@@ -113,6 +113,7 @@ function createTables() {
       status TEXT DEFAULT 'unbilled',
       notes TEXT,
       date TEXT DEFAULT (date('now')),
+      sort_order INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -240,6 +241,11 @@ function createTables() {
 }
 
 function runMigrations() {
+  // Add sort_order column to line_items if missing
+  const liCols = db.prepare("PRAGMA table_info(line_items)").all().map(c => c.name);
+  if (!liCols.includes('sort_order')) {
+    db.prepare('ALTER TABLE line_items ADD COLUMN sort_order INTEGER DEFAULT 0').run();
+  }
   // Add notes column to invoice_line_items if missing
   const iliCols = db.prepare("PRAGMA table_info(invoice_line_items)").all().map(c => c.name);
   if (!iliCols.includes('notes')) {
@@ -576,11 +582,19 @@ function archiveProject(id) {
 // ── Line Items ──
 
 function getLineItems(projectId) {
-  return db.prepare('SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? ORDER BY li.created_at').all(projectId);
+  return db.prepare('SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? ORDER BY li.sort_order, li.created_at').all(projectId);
 }
 
 function getUnbilledLineItems(projectId) {
-  return db.prepare("SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? AND li.status = 'unbilled' ORDER BY li.created_at").all(projectId);
+  return db.prepare("SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? AND li.status = 'unbilled' ORDER BY li.sort_order, li.created_at").all(projectId);
+}
+
+function reorderLineItems(orderedIds) {
+  const tx = db.transaction((ids) => {
+    const stmt = db.prepare('UPDATE line_items SET sort_order = ? WHERE id = ?');
+    ids.forEach((id, i) => stmt.run(i, id));
+  });
+  tx(orderedIds);
 }
 
 function createLineItem(data) {
@@ -1147,7 +1161,7 @@ module.exports = {
   // Projects
   getProjects, getProject, createProject, updateProject, archiveProject,
   // Line Items
-  getLineItems, getUnbilledLineItems, createLineItem, updateLineItem, deleteLineItem, markLineItemsInvoiced,
+  getLineItems, getUnbilledLineItems, createLineItem, updateLineItem, deleteLineItem, markLineItemsInvoiced, reorderLineItems,
   // Categories
   getCategories, saveCategory, deleteCategory, reorderCategories,
   // Taxes
