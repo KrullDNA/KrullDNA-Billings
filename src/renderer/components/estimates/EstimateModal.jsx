@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentRenderer } from '../builder/Builder';
 
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 
 function formatCurrency(amount, currency = 'AUD') {
@@ -23,7 +28,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
   const [settings, setSettings] = useState({});
 
   const [estimateNumber, setEstimateNumber] = useState('');
-  const [estimateDate, setEstimateDate] = useState(new Date().toISOString().slice(0, 10));
+  const [estimateDate, setEstimateDate] = useState(localDate());
   const [expiryDate, setExpiryDate] = useState('');
   const [comments, setComments] = useState('');
 
@@ -59,7 +64,7 @@ export default function EstimateModal({ open, onClose, client, project, onCreate
       const prefix = stngs.estimate_prefix || '';
       const nextNum = stngs.estimate_next_number || '1001';
       setEstimateNumber(`${prefix}${nextNum}`);
-      setEstimateDate(new Date().toISOString().slice(0, 10));
+      setEstimateDate(localDate());
       setComments('');
       setSaveFolder(stngs.estimate_save_folder || '');
       setSaveFolderName(stngs.estimate_save_folder ? stngs.estimate_save_folder.split('/').pop() : 'Estimates');

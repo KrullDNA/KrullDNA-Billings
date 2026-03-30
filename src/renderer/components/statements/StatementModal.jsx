@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '€', GBP: '£', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 
 function formatCurrency(amount, currency = 'AUD') {
@@ -11,7 +16,7 @@ export default function StatementModal({ open, onClose, client, onCreated }) {
   // state variables
   const [settings, setSettings] = useState({});
   const [statementNumber, setStatementNumber] = useState('');
-  const [statementDate, setStatementDate] = useState(new Date().toISOString().slice(0, 10));
+  const [statementDate, setStatementDate] = useState(localDate());
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [comments, setComments] = useState('');
@@ -38,7 +43,7 @@ export default function StatementModal({ open, onClose, client, onCreated }) {
       setStatementNumber(`${prefix}${nextNum}`);
 
       // Default period: 3 months ago to today
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDate();
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       setStatementDate(today);

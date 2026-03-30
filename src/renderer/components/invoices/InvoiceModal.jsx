@@ -4,6 +4,11 @@ import { DocumentRenderer } from '../builder/Builder';
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
 const TERMS_OPTIONS = ['COD', '7 Days', '14 Days', '21 Days', '30 Days', '60 Days', 'Custom'];
 
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function formatCurrency(amount, currency = 'AUD') {
   const sym = CURRENCY_SYMBOLS[currency] || '$';
   return `${sym}${(amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -31,7 +36,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
 
   // Invoice fields
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [invoiceDate, setInvoiceDate] = useState(localDate());
   const [terms, setTerms] = useState('14 Days');
   const [dueDate, setDueDate] = useState('');
   const [applyRetainer, setApplyRetainer] = useState(false);
@@ -74,7 +79,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
       const prefix = stngs.invoice_prefix || '';
       const nextNum = stngs.invoice_next_number || '1001';
       setInvoiceNumber(`${prefix}${nextNum}`);
-      setInvoiceDate(new Date().toISOString().slice(0, 10));
+      setInvoiceDate(localDate());
       setTerms(stngs.default_payment_terms || '14 Days');
       setRetainerAmount(0);
       setApplyRetainer(false);
