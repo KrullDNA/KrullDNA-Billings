@@ -589,6 +589,10 @@ function getUnbilledLineItems(projectId) {
   return db.prepare("SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? AND li.status = 'unbilled' ORDER BY li.sort_order, li.created_at").all(projectId);
 }
 
+function getWorkingLineItems(projectId) {
+  return db.prepare("SELECT li.*, c.name as category_name, t.name as tax_name, t.rate as tax_rate FROM line_items li LEFT JOIN categories c ON li.category_id = c.id LEFT JOIN taxes t ON li.tax_id = t.id WHERE li.project_id = ? AND li.status = 'working' ORDER BY li.sort_order, li.created_at").all(projectId);
+}
+
 function reorderLineItems(orderedIds) {
   const tx = db.transaction((ids) => {
     const stmt = db.prepare('UPDATE line_items SET sort_order = ? WHERE id = ?');
@@ -610,6 +614,16 @@ function updateLineItem(id, data) {
 
 function deleteLineItem(id) {
   db.prepare('DELETE FROM line_items WHERE id = ?').run(id);
+}
+
+function duplicateLineItem(id, overrides) {
+  const item = db.prepare('SELECT * FROM line_items WHERE id = ?').get(id);
+  if (!item) return null;
+  const { id: _, created_at, ...rest } = item;
+  const data = { ...rest, ...overrides };
+  const cols = Object.keys(data);
+  const placeholders = cols.map(() => '?').join(', ');
+  return db.prepare(`INSERT INTO line_items (${cols.join(', ')}) VALUES (${placeholders})`).run(...Object.values(data)).lastInsertRowid;
 }
 
 function markLineItemsInvoiced(ids) {
@@ -1161,7 +1175,7 @@ module.exports = {
   // Projects
   getProjects, getProject, createProject, updateProject, archiveProject,
   // Line Items
-  getLineItems, getUnbilledLineItems, createLineItem, updateLineItem, deleteLineItem, markLineItemsInvoiced, reorderLineItems,
+  getLineItems, getUnbilledLineItems, getWorkingLineItems, createLineItem, updateLineItem, deleteLineItem, duplicateLineItem, markLineItemsInvoiced, reorderLineItems,
   // Categories
   getCategories, saveCategory, deleteCategory, reorderCategories,
   // Taxes

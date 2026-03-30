@@ -121,6 +121,7 @@ export default function ClientView({ client, newProjectRequested }) {
               await window.api.reorderLineItems(orderedIds);
               loadLineItems();
             }}
+            onRefresh={refreshAll}
           />
         )}
         {activeTab === 'account' && (
@@ -157,23 +158,43 @@ function TabButton({ label, active, onClick }) {
 
 // ── Projects Tab ──
 
-function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency, onReorderLineItems }) {
+function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, lineItemFilter, onSetLineItemFilter, onNewProject, onEditProject, onNewLineItem, onEditLineItem, onSendInvoice, onSendEstimate, currency, onReorderLineItems, onRefresh }) {
   const unbilledItems = lineItems.filter((i) => i.status === 'unbilled');
   const estimateItems = lineItems.filter((i) => i.status === 'unbilled' || i.status === 'invoiced');
-  const workingItems = lineItems.filter((i) => i.status === 'invoiced' || i.status === 'working');
-  const displayItems = lineItemFilter === 'estimate' ? estimateItems : lineItems;
+  const workingItems = lineItems.filter((i) => i.status === 'working' || i.status === 'invoiced');
+  const displayItems = lineItemFilter === 'estimate' ? estimateItems : workingItems;
   const hasEstimateItems = unbilledItems.length > 0;
-  const hasWorkingItems = lineItems.some((i) => i.status !== 'unbilled');
+  const hasWorkingItems = workingItems.length > 0;
+  const [lineItemContextMenu, setLineItemContextMenu] = useState(null);
 
   async function handleStartWorking(item) {
-    // Copy the estimate line item to a "working" version by updating its status
     try {
-      await window.api.updateLineItem(item.id, { status: 'working' });
-      // Trigger refresh
-      onEditLineItem(null); // hack to trigger parent refresh
-      window.location.reload(); // simple refresh for now
+      await window.api.duplicateLineItem(item.id, { status: 'working' });
+      onSetLineItemFilter('working');
+      onRefresh();
     } catch (err) { console.error(err); }
   }
+
+  async function handleDuplicateLineItem(item) {
+    setLineItemContextMenu(null);
+    try {
+      await window.api.duplicateLineItem(item.id, {});
+      onRefresh();
+    } catch (err) { console.error(err); }
+  }
+
+  function handleLineItemContextMenu(e, item) {
+    e.preventDefault();
+    e.stopPropagation();
+    setLineItemContextMenu({ x: e.clientX, y: e.clientY, item });
+  }
+
+  useEffect(() => {
+    if (!lineItemContextMenu) return;
+    const close = () => setLineItemContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [lineItemContextMenu]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -213,7 +234,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
                 {lineItemFilter === 'estimate' ? (
                   <button onClick={onSendEstimate} disabled={!hasEstimateItems} className={`px-3 py-1 text-xs rounded-md font-medium ${hasEstimateItems ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Estimate</button>
                 ) : (
-                  <button onClick={onSendInvoice} disabled={unbilledItems.length === 0} className={`px-3 py-1 text-xs rounded-md font-medium ${unbilledItems.length > 0 ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Invoice</button>
+                  <button onClick={onSendInvoice} disabled={!hasWorkingItems} className={`px-3 py-1 text-xs rounded-md font-medium ${hasWorkingItems ? 'text-white bg-brand-600 hover:bg-brand-700' : 'text-gray-300 bg-gray-100 cursor-not-allowed'}`}>Create Invoice</button>
                 )}
               </div>
             </div>
@@ -225,7 +246,18 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
               onEditLineItem={onEditLineItem}
               handleStartWorking={handleStartWorking}
               onReorderLineItems={onReorderLineItems}
+              onContextMenu={handleLineItemContextMenu}
             />
+
+            {/* Line Item Context Menu */}
+            {lineItemContextMenu && (
+              <div
+                className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[180px]"
+                style={{ left: lineItemContextMenu.x, top: lineItemContextMenu.y }}
+              >
+                <button onClick={() => handleDuplicateLineItem(lineItemContextMenu.item)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Duplicate Line Item</button>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a project to view its line items</div>
@@ -235,7 +267,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
   );
 }
 
-function SortableLineItemList({ displayItems, currency, lineItemFilter, onEditLineItem, handleStartWorking, onReorderLineItems }) {
+function SortableLineItemList({ displayItems, currency, lineItemFilter, onEditLineItem, handleStartWorking, onReorderLineItems, onContextMenu }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragEnd(event) {
@@ -253,7 +285,7 @@ function SortableLineItemList({ displayItems, currency, lineItemFilter, onEditLi
         <span /><span>Kind</span><span>Name</span><span className="text-right">Date Due</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Total</span><span /><span />
       </div>
       {displayItems.length === 0 ? (
-        <div className="px-6 py-6 text-center text-sm text-gray-400">{lineItemFilter === 'estimate' ? 'No estimate line items.' : 'No line items yet.'}</div>
+        <div className="px-6 py-6 text-center text-sm text-gray-400">{lineItemFilter === 'estimate' ? 'No estimate line items.' : 'No working line items. Click "Start Working" on an estimate item.'}</div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={displayItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -265,6 +297,7 @@ function SortableLineItemList({ displayItems, currency, lineItemFilter, onEditLi
                 onClick={() => onEditLineItem(item)}
                 showStartWorking={lineItemFilter === 'estimate'}
                 onStartWorking={() => handleStartWorking(item)}
+                onContextMenu={onContextMenu}
               />
             ))}
           </SortableContext>
@@ -284,11 +317,11 @@ function SortableLineItemRow(props) {
   );
 }
 
-function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking, dragHandleProps }) {
+function LineItemRow({ item, currency, onClick, showStartWorking, onStartWorking, dragHandleProps, onContextMenu }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <>
-      <div className="grid grid-cols-[20px_60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick}>
+      <div className="grid grid-cols-[20px_60px_1fr_90px_60px_80px_80px_100px_28px] gap-2 px-6 py-2 text-sm border-b border-gray-50 hover:bg-gray-50 items-center cursor-pointer" onClick={onClick} onContextMenu={(e) => onContextMenu?.(e, item)}>
         <span className="flex items-center justify-center cursor-grab text-gray-300 hover:text-gray-500" onClick={(e) => e.stopPropagation()} {...dragHandleProps}>
           <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></svg>
         </span>

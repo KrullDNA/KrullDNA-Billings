@@ -27,9 +27,11 @@ contextBridge.exposeInMainWorld('api', {
   // Line Items
   getLineItems: (projectId) => ipcRenderer.invoke('getLineItems', projectId),
   getUnbilledLineItems: (projectId) => ipcRenderer.invoke('getUnbilledLineItems', projectId),
+  getWorkingLineItems: (projectId) => ipcRenderer.invoke('getWorkingLineItems', projectId),
   createLineItem: (data) => ipcRenderer.invoke('createLineItem', data),
   updateLineItem: (id, data) => ipcRenderer.invoke('updateLineItem', id, data),
   deleteLineItem: (id) => ipcRenderer.invoke('deleteLineItem', id),
+  duplicateLineItem: (id, overrides) => ipcRenderer.invoke('duplicateLineItem', id, overrides),
   reorderLineItems: (orderedIds) => ipcRenderer.invoke('reorderLineItems', orderedIds),
   markLineItemsInvoiced: (ids) => ipcRenderer.invoke('markLineItemsInvoiced', ids),
 
