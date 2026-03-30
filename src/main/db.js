@@ -17,6 +17,7 @@ function initDatabase() {
   db.pragma('foreign_keys = ON');
 
   createTables();
+  runMigrations();
   seedDefaults();
   repairMissingLineItems();
   updateOverdueInvoices();
@@ -156,7 +157,8 @@ function createTables() {
       subtotal REAL DEFAULT 0,
       tax_amount REAL DEFAULT 0,
       total REAL DEFAULT 0,
-      sort_order INTEGER DEFAULT 0
+      sort_order INTEGER DEFAULT 0,
+      notes TEXT
     );
 
     CREATE TABLE IF NOT EXISTS estimates (
@@ -192,7 +194,8 @@ function createTables() {
       subtotal REAL DEFAULT 0,
       tax_amount REAL DEFAULT 0,
       total REAL DEFAULT 0,
-      sort_order INTEGER DEFAULT 0
+      sort_order INTEGER DEFAULT 0,
+      notes TEXT
     );
 
     CREATE TABLE IF NOT EXISTS statements (
@@ -234,6 +237,30 @@ function createTables() {
       value TEXT
     );
   `);
+}
+
+function runMigrations() {
+  // Add notes column to invoice_line_items if missing
+  const iliCols = db.prepare("PRAGMA table_info(invoice_line_items)").all().map(c => c.name);
+  if (!iliCols.includes('notes')) {
+    db.prepare('ALTER TABLE invoice_line_items ADD COLUMN notes TEXT').run();
+  }
+  // Add notes column to estimate_line_items if missing
+  const eliCols = db.prepare("PRAGMA table_info(estimate_line_items)").all().map(c => c.name);
+  if (!eliCols.includes('notes')) {
+    db.prepare('ALTER TABLE estimate_line_items ADD COLUMN notes TEXT').run();
+  }
+  // Backfill notes from linked line_items
+  db.prepare(`
+    UPDATE invoice_line_items SET notes = (
+      SELECT li.notes FROM line_items li WHERE li.id = invoice_line_items.line_item_id
+    ) WHERE notes IS NULL AND line_item_id IS NOT NULL
+  `).run();
+  db.prepare(`
+    UPDATE estimate_line_items SET notes = (
+      SELECT li.notes FROM line_items li WHERE li.id = estimate_line_items.line_item_id
+    ) WHERE notes IS NULL AND line_item_id IS NOT NULL
+  `).run();
 }
 
 function seedDefaults() {
@@ -672,13 +699,13 @@ function createInvoice(data, lineItemIds) {
     }).filter(Boolean);
 
     const insertILI = db.prepare(`
-      INSERT INTO invoice_line_items (invoice_id, line_item_id, category_name, name, kind, quantity, rate, markup_pct, discount_pct, tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO invoice_line_items (invoice_id, line_item_id, category_name, name, kind, quantity, rate, markup_pct, discount_pct, tax_name, tax_rate, subtotal, tax_amount, total, sort_order, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     let subtotal = 0, taxTotal = 0, markupTotal = 0, discountTotal = 0;
     for (const li of items) {
-      insertILI.run(invoiceId, li.id, li.category_name, li.name, li.kind, li.quantity, li.rate, li.markup_pct, li.discount_pct, li.tax_name, li.tax_rate || 0, li.subtotal, li.tax_amount, li.total, li.sort_order);
+      insertILI.run(invoiceId, li.id, li.category_name, li.name, li.kind, li.quantity, li.rate, li.markup_pct, li.discount_pct, li.tax_name, li.tax_rate || 0, li.subtotal, li.tax_amount, li.total, li.sort_order, li.notes || null);
       subtotal += li.subtotal;
       taxTotal += li.tax_amount;
       markupTotal += li.markup_amount || 0;
@@ -782,13 +809,13 @@ function createEstimate(data, lineItemIds) {
     }).filter(Boolean);
 
     const insertELI = db.prepare(`
-      INSERT INTO estimate_line_items (estimate_id, line_item_id, category_name, name, quantity, rate, tax_name, tax_rate, subtotal, tax_amount, total, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO estimate_line_items (estimate_id, line_item_id, category_name, name, quantity, rate, tax_name, tax_rate, subtotal, tax_amount, total, sort_order, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     let subtotal = 0, taxTotal = 0;
     for (const li of items) {
-      insertELI.run(estimateId, li.id, li.category_name, li.name, li.quantity, li.rate, li.tax_name, li.tax_rate || 0, li.subtotal, li.tax_amount, li.total, li.sort_order);
+      insertELI.run(estimateId, li.id, li.category_name, li.name, li.quantity, li.rate, li.tax_name, li.tax_rate || 0, li.subtotal, li.tax_amount, li.total, li.sort_order, li.notes || null);
       subtotal += li.subtotal;
       taxTotal += li.tax_amount;
     }
