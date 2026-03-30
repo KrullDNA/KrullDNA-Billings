@@ -141,7 +141,7 @@ export default function ClientView({ client, newProjectRequested }) {
 
       {/* Modals */}
       <ProjectForm open={projectFormOpen} onClose={() => setProjectFormOpen(false)} project={editingProject} clientId={client.id} onSaved={() => { loadProjects(); setEditingProject(null); }} />
-      <LineItemForm open={lineItemFormOpen} onClose={() => setLineItemFormOpen(false)} lineItem={editingLineItem} projectId={selectedProject?.id} currency={currency} onSaved={refreshAll} />
+      <LineItemForm open={lineItemFormOpen} onClose={() => setLineItemFormOpen(false)} lineItem={editingLineItem} projectId={selectedProject?.id} currency={currency} onSaved={refreshAll} defaultStatus={lineItemFilter === 'working' ? 'working' : 'unbilled'} />
       <InvoiceModal open={invoiceModalOpen} onClose={() => setInvoiceModalOpen(false)} client={client} project={selectedProject} onCreated={refreshAll} />
       <EstimateModal open={estimateModalOpen} onClose={() => setEstimateModalOpen(false)} client={client} project={selectedProject} onCreated={refreshAll} />
     </div>
