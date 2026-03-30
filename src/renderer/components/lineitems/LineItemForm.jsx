@@ -28,7 +28,7 @@ const emptyForm = {
   status: 'unbilled',
 };
 
-export default function LineItemForm({ open, onClose, lineItem, projectId, currency, onSaved }) {
+export default function LineItemForm({ open, onClose, lineItem, projectId, currency, onSaved, defaultStatus }) {
   const [form, setForm] = useState({ ...emptyForm });
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -62,7 +62,7 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
       setStartedChecked(false);
       setCompletedChecked(false);
     } else {
-      setForm({ ...emptyForm, date: localDate() });
+      setForm({ ...emptyForm, date: localDate(), status: defaultStatus || 'unbilled' });
       setStartedChecked(false);
       setCompletedChecked(false);
       setStartedDate(localDate());
