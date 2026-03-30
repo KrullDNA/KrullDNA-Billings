@@ -71,12 +71,23 @@ export default function ClientForm({ open, onClose, client, clientGroups, defaul
     data.hourly_rate = parseFloat(data.hourly_rate) || 0;
     data.mileage_rate = parseFloat(data.mileage_rate) || 0;
 
+    // Only include actual client table columns
+    const clientFields = [
+      'first_name', 'last_name', 'company', 'is_company', 'email', 'phone',
+      'address_street', 'address_city', 'address_state', 'address_postcode', 'address_country',
+      'group_id', 'tax_id', 'client_number', 'hourly_rate', 'mileage_rate', 'currency',
+      'extra_field_1', 'extra_field_2', 'extra_field_3', 'notes',
+    ];
+    const cleanData = {};
+    for (const key of clientFields) {
+      if (key in data) cleanData[key] = data[key];
+    }
+
     try {
       if (isEditing) {
-        const { id, created_at, updated_at, projects, ...updateData } = data;
-        await window.api.updateClient(client.id, updateData);
+        await window.api.updateClient(client.id, cleanData);
       } else {
-        await window.api.createClient(data);
+        await window.api.createClient(cleanData);
       }
       onSaved();
       onClose();
