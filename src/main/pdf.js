@@ -148,9 +148,9 @@ function renderToHtml(blocks, data) {
   body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 0; size: A4; }
-  .page-header { padding: 30px 60px 20px 60px; }
-  .page-content { flex: 0 0 auto; padding: 0 60px; }
-  .page-bottom { margin-top: auto; padding: 0 60px 30px 60px; }
+  .page-header { padding: 30px 45px 20px 45px; }
+  .page-content { flex: 0 0 auto; padding: 0 45px; }
+  .page-bottom { margin-top: auto; padding: 0 45px 30px 45px; }
 </style>
 </head>
 <body>
