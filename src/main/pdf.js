@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { app } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const db = require('./db');
 
 const CURRENCY_SYMBOLS = { AUD: '$', USD: 'US$', EUR: '\u20ac', GBP: '\u00a3', NZD: 'NZ$', CAD: 'CA$', SGD: 'S$' };
@@ -81,50 +81,29 @@ async function generate(docType, docId) {
 
   const html = renderToHtml(blocks, data);
 
-  // Generate PDF via Puppeteer
-  let puppeteer;
-  try {
-    puppeteer = require('puppeteer-core');
-  } catch {
-    puppeteer = require('puppeteer');
-  }
-
-  const chromePath = findChrome();
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: chromePath || undefined,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
-
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-
   const tmpDir = path.join(os.tmpdir(), 'krull-billings-pdfs');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   const pdfPath = path.join(tmpDir, filename);
 
-  await page.pdf({
-    path: pdfPath,
-    format: 'A4',
-    printBackground: true,
-    margin: { top: '0', right: '0', bottom: '0', left: '0' },
-  });
-
-  await browser.close();
+  await printHtmlToPdf(html, pdfPath);
   return { path: pdfPath, filename };
 }
 
-function findChrome() {
-  const paths = process.platform === 'darwin'
-    ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium']
-    : process.platform === 'win32'
-      ? ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe']
-      : ['/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
-
-  for (const p of paths) {
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
+async function printHtmlToPdf(html, outputPath) {
+  const win = new BrowserWindow({
+    show: false,
+    width: 595,
+    height: 842,
+    webPreferences: { offscreen: true },
+  });
+  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  const pdfBuffer = await win.webContents.printToPDF({
+    pageSize: 'A4',
+    printBackground: true,
+    margins: { marginType: 'none' },
+  });
+  fs.writeFileSync(outputPath, pdfBuffer);
+  win.destroy();
 }
 
 // ── HTML Renderer ──
@@ -298,7 +277,7 @@ function lineItemsHtml(props, data) {
     html += `<div style="flex:1;padding-right:16px;">`;
     if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
     html += `<div style="font-size:11px;color:#000;">${esc(item.name)}</div>`;
-    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;">${esc(item.notes)}</div>`;
+    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.4;white-space:pre-wrap;">${esc(item.notes)}</div>`;
     html += `</div>`;
     html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.subtotal || item.total, currency)}</div>`;
     html += `</div>`;
@@ -452,17 +431,11 @@ async function generateStatementPdf(stmtId) {
     .trim() + '.pdf';
   const html = generateStatementHtml(stmtId);
 
-  let puppeteer;
-  try { puppeteer = require('puppeteer-core'); } catch { puppeteer = require('puppeteer'); }
-  const chromePath = findChrome();
-  const browser = await puppeteer.launch({ headless: true, executablePath: chromePath || undefined, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
   const tmpDir = path.join(os.tmpdir(), 'krull-billings-pdfs');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   const pdfPath = path.join(tmpDir, filename);
-  await page.pdf({ path: pdfPath, format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } });
-  await browser.close();
+
+  await printHtmlToPdf(html, pdfPath);
   return { path: pdfPath, filename };
 }
 
