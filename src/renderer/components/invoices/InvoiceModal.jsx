@@ -60,7 +60,7 @@ export default function InvoiceModal({ open, onClose, client, project, onCreated
   async function loadData() {
     try {
       const [items, tmpls, stngs] = await Promise.all([
-        window.api.getUnbilledLineItems(project.id),
+        window.api.getWorkingLineItems(project.id),
         window.api.getTemplates('invoice'),
         window.api.getSettings(),
       ]);
