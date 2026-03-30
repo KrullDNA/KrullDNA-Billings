@@ -163,7 +163,7 @@ function LineItemsBlock({ props, data, style }) {
               )}
             </div>
             <div style={{ fontSize: 11, textAlign: 'right', width: 110, paddingRight: 12, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-              {fmt(item.total, currency)}
+              {fmt(item.subtotal || item.total, currency)}
             </div>
           </div>
         </div>
