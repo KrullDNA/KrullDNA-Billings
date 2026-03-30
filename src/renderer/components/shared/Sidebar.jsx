@@ -91,7 +91,7 @@ export default function Sidebar({
     try { saved = JSON.parse(localStorage.getItem('sidebar_expanded') || '{}'); } catch {}
     const expanded = {};
     for (const group of clientGroups) {
-      expanded[group.id] = saved[group.id] !== undefined ? saved[group.id] : (expandedGroups[group.id] !== undefined ? expandedGroups[group.id] : true);
+      expanded[group.id] = saved[group.id] !== undefined ? saved[group.id] : (expandedGroups[group.id] !== undefined ? expandedGroups[group.id] : false);
     }
     setExpandedGroups(expanded);
   }, [clientGroups]);

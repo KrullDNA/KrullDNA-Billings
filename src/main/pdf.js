@@ -300,7 +300,7 @@ function totalsHtml(props, data) {
   if (props.showTax && (doc.tax_total || 0) > 0) rows += totalsRowHtml('GST 10%', fmt(doc.tax_total, currency));
   if (props.showRetainer && (doc.retainer_applied || 0) > 0) rows += totalsRowHtml('RETAINER', `-${fmt(doc.retainer_applied, currency)}`);
 
-  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:8px 12px;font-weight:700;font-size:11px;">TOTAL</td><td style="text-align:right;padding:8px 16px 8px 12px;font-weight:700;font-size:11px;width:130px;">${fmt(doc.total, currency)}</td></tr>`;
+  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 8px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">TOTAL</td><td style="text-align:right;padding:6px 16px 6px 12px;font-weight:700;font-size:10px;width:130px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
   rows += `<div style="height:20px;"></div>`;
   return rows;
