@@ -114,7 +114,7 @@ function renderToHtml(blocks, data) {
   const paidStamp = isPaid ? `
     <div style="position:fixed;top:120px;right:60px;width:160px;height:160px;transform:rotate(-18deg);pointer-events:none;z-index:100;">
       <div style="width:150px;height:150px;border:5px solid #dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-        <span style="color:#dc2626;font-weight:bold;font-size:20px;text-align:center;line-height:1.2;">PAID<br>IN FULL</span>
+        <span style="color:#dc2626;font-weight:bold;font-size:22px;text-align:center;line-height:1.2;">PAID<br>IN FULL</span>
       </div>
     </div>
   ` : '';
@@ -145,7 +145,7 @@ function renderToHtml(blocks, data) {
 <title>${esc(data.docTitle || 'Document')}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
+  body { font-family: 'Gotham', 'Gotham Rounded', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #000; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
   table { border-collapse: collapse; }
   @page { margin: 0; size: A4; }
   .page-header { padding: 30px 45px 20px 45px; }
@@ -201,7 +201,7 @@ function headerHtml(props, data) {
       const b64 = fs.readFileSync(logoPath).toString('base64');
       logoHtml = `<img src="data:${mime};base64,${b64}" style="width:80px;height:80px;object-fit:contain;" />`;
     } else {
-      logoHtml = `<div style="width:80px;height:80px;background:#1a1a1a;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;"><div><div style="font-weight:300;font-size:11px;letter-spacing:0.25em;">K R U L L</div><div style="font-weight:700;font-size:14px;">D+A</div></div></div>`;
+      logoHtml = `<div style="width:80px;height:80px;background:#1a1a1a;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;"><div><div style="font-weight:300;font-size:13px;letter-spacing:0.25em;">K R U L L</div><div style="font-weight:700;font-size:16px;">D+A</div></div></div>`;
     }
   }
 
@@ -220,14 +220,14 @@ function headerHtml(props, data) {
 }
 
 function labelRow(label, value) {
-  return `<tr><td style="font-weight:700;font-size:10px;text-transform:uppercase;text-align:right;padding-right:6px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.15;">${label}:</td><td style="font-size:11px;padding-bottom:0;line-height:1.15;">${value}</td></tr>`;
+  return `<tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;text-align:right;padding-right:6px;padding-bottom:0;letter-spacing:0.05em;white-space:nowrap;line-height:1.15;">${label}:</td><td style="font-size:13px;padding-bottom:0;line-height:1.15;">${value}</td></tr>`;
 }
 
 function clientHtml(props, data) {
   const c = data.client || {};
   const contactName = [c.first_name, c.last_name].filter(Boolean).join(' ');
   const fs2 = props.fontSize || 11;
-  let html = `<div style="font-size:9px;font-weight:700;color:#333;text-transform:uppercase;margin-bottom:3px;letter-spacing:0.02em;">${esc(props.sectionLabel || 'BILL TO')}</div>`;
+  let html = `<div style="font-size:11px;font-weight:700;color:#333;text-transform:uppercase;margin-bottom:3px;letter-spacing:0.02em;">${esc(props.sectionLabel || 'BILL TO')}</div>`;
   if (c.company) html += `<div style="font-size:${fs2}px;font-weight:500;">${esc(c.company)}</div>`;
   if (contactName) html += `<div style="font-size:${c.company ? fs2 - 1 : fs2}px;${c.company ? 'color:#000;' : 'font-weight:500;'}">${esc(contactName)}</div>`;
   if (c.address_street) html += `<div style="font-size:${fs2 - 1}px;color:#000;">${esc(c.address_street)}</div>`;
@@ -241,8 +241,8 @@ function clientHtml(props, data) {
 function docTitleHtml(props, data) {
   const title = props.titleLabel || 'DESCRIPTION';
   return `<div style="display:flex;justify-content:space-between;background:#111;color:#fff;padding:6px 8px;">
-    <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">${esc(title)}</span>
-    <span style="font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;width:110px;text-align:right;padding-right:12px;flex-shrink:0;">AMOUNT</span>
+    <span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">${esc(title)}</span>
+    <span style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;width:130px;text-align:right;padding-right:12px;flex-shrink:0;">AMOUNT</span>
   </div>`;
 }
 
@@ -275,15 +275,15 @@ function lineItemsHtml(props, data) {
     }
     html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;${i === 0 ? 'margin-top:8px;' : ''}">`;
     html += `<div style="flex:1;padding-right:16px;">`;
-    if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
-    html += `<div style="font-size:11px;color:#000;line-height:1.1;">${esc(item.name)}</div>`;
-    if (item.notes) html += `<div style="font-size:9px;color:#333;margin-top:3px;line-height:1.1;white-space:pre-wrap;">${esc(item.notes)}</div>`;
+    if (item._cat && item._isFirstInCat) html += `<div style="font-weight:700;font-size:13px;text-transform:uppercase;margin-bottom:1px;letter-spacing:0.02em;">${esc(item._cat)}</div>`;
+    html += `<div style="font-size:13px;color:#000;line-height:1.1;">${esc(item.name)}</div>`;
+    if (item.notes) html += `<div style="font-size:11px;color:#333;margin-top:3px;line-height:1.1;white-space:pre-wrap;">${esc(item.notes)}</div>`;
     html += `</div>`;
-    html += `<div style="font-size:11px;text-align:right;width:110px;padding-right:12px;flex-shrink:0;">${fmt(item.subtotal || item.total, currency)}</div>`;
+    html += `<div style="font-size:13px;text-align:right;width:130px;padding-right:12px;flex-shrink:0;">${fmt(item.subtotal || item.total, currency)}</div>`;
     html += `</div>`;
   });
 
-  if (items.length === 0) html += `<div style="padding:16px 0;text-align:center;color:#9ca3af;font-size:11px;">No line items</div>`;
+  if (items.length === 0) html += `<div style="padding:16px 0;text-align:center;color:#9ca3af;font-size:13px;">No line items</div>`;
   return html;
 }
 
@@ -293,21 +293,21 @@ function totalsHtml(props, data) {
 
   let rows = '';
   rows += `<hr style="border:none;border-top:2px solid #111;margin-bottom:0;" />`;
-  rows += `<table style="width:100%;font-size:11px;border-collapse:collapse;">`;
+  rows += `<table style="width:100%;font-size:13px;border-collapse:collapse;">`;
   if (props.showSubtotal) rows += totalsRowHtml('SUBTOTAL', fmt(doc.subtotal, currency));
   if (props.showMarkup && (doc.markup_total || 0) > 0) rows += totalsRowHtml('MARKUP', fmt(doc.markup_total, currency));
   if (props.showDiscount && (doc.discount_total || 0) > 0) rows += totalsRowHtml('DISCOUNT', `-${fmt(doc.discount_total, currency)}`);
   if (props.showTax && (doc.tax_total || 0) > 0) rows += totalsRowHtml('GST 10%', fmt(doc.tax_total, currency));
   if (props.showRetainer && (doc.retainer_applied || 0) > 0) rows += totalsRowHtml('RETAINER', `-${fmt(doc.retainer_applied, currency)}`);
 
-  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 8px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;">TOTAL</td><td style="text-align:right;padding:6px 16px 6px 12px;font-weight:700;font-size:10px;width:130px;">${fmt(doc.total, currency)}</td></tr>`;
+  rows += `<tr style="background:#111;color:#fff;"><td style="text-align:right;padding:6px 8px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">TOTAL</td><td style="text-align:right;padding:6px 16px 6px 12px;font-weight:700;font-size:12px;width:130px;">${fmt(doc.total, currency)}</td></tr>`;
   rows += `</table>`;
   rows += `<div style="height:20px;"></div>`;
   return rows;
 }
 
 function totalsRowHtml(label, value) {
-  return `<tr><td style="text-align:right;padding:6px 12px;color:#000;font-size:11px;">${label}</td><td style="text-align:right;padding:6px 16px 6px 12px;font-size:11px;width:130px;border-left:1px solid #111;">${value}</td></tr>`;
+  return `<tr><td style="text-align:right;padding:6px 12px;color:#000;font-size:13px;">${label}</td><td style="text-align:right;padding:6px 16px 6px 12px;font-size:13px;width:130px;border-left:1px solid #111;">${value}</td></tr>`;
 }
 
 function notesHtml(props, data) {
@@ -318,12 +318,12 @@ function notesHtml(props, data) {
 
   let html = '';
   // Terms
-  if (doc.terms) html += `<div style="margin-bottom:12px;font-size:10px;"><span style="font-weight:700;letter-spacing:0.02em;">TERMS: </span>${esc(doc.terms)}</div>`;
+  if (doc.terms) html += `<div style="margin-bottom:12px;font-size:12px;"><span style="font-weight:700;letter-spacing:0.02em;">TERMS: </span>${esc(doc.terms)}</div>`;
 
   // Banking details
   if (s.bank_name) {
-    html += `<div style="margin-bottom:12px;font-size:10px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
-    html += `<table style="font-size:10px;border-collapse:collapse;">`;
+    html += `<div style="margin-bottom:12px;font-size:12px;"><div style="font-weight:700;margin-bottom:2px;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+    html += `<table style="font-size:12px;border-collapse:collapse;">`;
     if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
     if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
     if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
@@ -331,7 +331,7 @@ function notesHtml(props, data) {
     html += `</table></div>`;
   }
 
-  if (notes) html += `<div style="color:#000;white-space:pre-wrap;font-size:10px;">${esc(notes)}</div>`;
+  if (notes) html += `<div style="color:#000;white-space:pre-wrap;font-size:12px;">${esc(notes)}</div>`;
   return html;
 }
 
@@ -356,10 +356,10 @@ function textHtml(props, data) {
     if (s.website) contactParts.push(`<strong>W:</strong> ${esc(s.website)}`);
     const contactLine = contactParts.length ? `<div>${contactParts.join('&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;')}</div>` : '';
 
-    return `<div style="font-size:${props.fontSize || 9}px;color:#000;">${line1}${addrLine}${contactLine}</div>`;
+    return `<div style="font-size:${(props.fontSize || 9) + 2}px;color:#000;">${line1}${addrLine}${contactLine}</div>`;
   }
 
-  return `<div style="font-size:${props.fontSize || 10}px;color:${props.color || '#374151'};text-align:${props.alignment || 'left'};font-weight:${props.bold ? 'bold' : 'normal'};">${esc(props.content || '')}</div>`;
+  return `<div style="font-size:${(props.fontSize || 10) + 2}px;color:${props.color || '#374151'};text-align:${props.alignment || 'left'};font-weight:${props.bold ? 'bold' : 'normal'};">${esc(props.content || '')}</div>`;
 }
 
 function footerHtml(props, data) {
@@ -370,24 +370,24 @@ function footerHtml(props, data) {
 
   // Estimate: signature lines + disclosure
   if (isEstimate) {
-    html += `<div style="display:flex;gap:16px;margin:10px 0 8px;font-size:10px;">`;
+    html += `<div style="display:flex;gap:16px;margin:10px 0 8px;font-size:12px;">`;
     html += `<div style="flex:1;"><div style="margin-bottom:4px;">CLIENT SIGNATURE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `<div style="flex:1;"><div style="margin-bottom:4px;">PRINT:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `<div style="flex:0.7;"><div style="margin-bottom:4px;">DATE:</div><div style="border-bottom:1px solid #111;height:20px;"></div></div>`;
     html += `</div>`;
     if (s.estimate_disclosure) {
-      html += `<div style="font-size:7px;color:#000;line-height:1.2;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
+      html += `<div style="font-size:9px;color:#000;line-height:1.2;margin-bottom:6px;">${esc(s.estimate_disclosure)}</div>`;
     }
   }
 
   // Invoice: terms + banking
   if (!isEstimate) {
     const terms = doc.terms || props.defaultTerms;
-    if (terms) html += `<div style="margin-bottom:4px;font-size:10px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
+    if (terms) html += `<div style="margin-bottom:4px;font-size:12px;"><strong>TERMS: </strong>${esc(terms)}</div>`;
 
     if (s.bank_name) {
-      html += `<div style="margin-bottom:6px;font-size:10px;"><div style="font-weight:700;margin-bottom:0;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
-      html += `<table style="font-size:10px;border-collapse:collapse;line-height:1.15;">`;
+      html += `<div style="margin-bottom:6px;font-size:12px;"><div style="font-weight:700;margin-bottom:0;letter-spacing:0.02em;">BANKING DETAILS:</div>`;
+      html += `<table style="font-size:12px;border-collapse:collapse;line-height:1.15;">`;
       if (s.bank_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BANK:</td><td>${esc(s.bank_name)}</td></tr>`;
       if (s.bank_account_name) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">NAME:</td><td>${esc(s.bank_account_name)}</td></tr>`;
       if (s.bank_bsb) html += `<tr><td style="font-weight:500;text-align:right;padding-right:6px;">BSB:</td><td>${esc(s.bank_bsb)}</td></tr>`;
@@ -400,7 +400,7 @@ function footerHtml(props, data) {
   if (s.business_name) {
     let line1 = `<strong>${esc(s.business_name)}</strong>`;
     if (s.abn) line1 += ` &bull; <strong>ABN</strong>: ${esc(s.abn)}`;
-    html += `<div style="font-size:9px;">${line1}`;
+    html += `<div style="font-size:11px;">${line1}`;
     const addrParts = [s.address_street, [s.address_city, s.address_state, s.address_postcode].filter(Boolean).join(', '), s.address_country].filter(Boolean);
     if (addrParts.length) html += `<br>${esc(addrParts.join(', '))}`;
     const contactParts = [];
