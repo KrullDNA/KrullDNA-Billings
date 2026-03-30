@@ -157,7 +157,7 @@ function LineItemsBlock({ props, data, style }) {
               {item._cat && item._isFirstInCat && (
                 <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', marginBottom: 1, letterSpacing: '0.02em' }}>{item._cat}</div>
               )}
-              <div style={{ fontSize: 11, color: '#000' }}>{item.name}</div>
+              <div style={{ fontSize: 11, color: '#000', lineHeight: 1.1 }}>{item.name}</div>
               {item.notes && (
                 <div style={{ fontSize: 9, color: '#333', marginTop: 3, lineHeight: 1.1, whiteSpace: 'pre-wrap' }}>{item.notes}</div>
               )}
