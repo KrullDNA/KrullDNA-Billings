@@ -613,6 +613,8 @@ function updateLineItem(id, data) {
 }
 
 function deleteLineItem(id) {
+  db.prepare('UPDATE estimate_line_items SET line_item_id = NULL WHERE line_item_id = ?').run(id);
+  db.prepare('UPDATE invoice_line_items SET line_item_id = NULL WHERE line_item_id = ?').run(id);
   db.prepare('DELETE FROM line_items WHERE id = ?').run(id);
 }
 
