@@ -169,7 +169,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
 
   async function handleStartWorking(item) {
     try {
-      await window.api.duplicateLineItem(item.id, { status: 'working' });
+      await window.api.updateLineItem(item.id, { status: 'working' });
       onSetLineItemFilter('working');
       onRefresh();
     } catch (err) { console.error(err); }

@@ -29,7 +29,30 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      spellcheck: true,
     },
+  });
+
+  // Spellcheck context menu with suggestions
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    if (params.misspelledWord) {
+      const { Menu, MenuItem } = require('electron');
+      const menu = new Menu();
+      for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+        menu.append(new MenuItem({
+          label: suggestion,
+          click: () => mainWindow.webContents.replaceMisspelling(suggestion),
+        }));
+      }
+      if (params.dictionarySuggestions.length > 0) {
+        menu.append(new MenuItem({ type: 'separator' }));
+      }
+      menu.append(new MenuItem({
+        label: 'Add to Dictionary',
+        click: () => mainWindow.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+      }));
+      menu.popup();
+    }
   });
 
   if (isDev) {

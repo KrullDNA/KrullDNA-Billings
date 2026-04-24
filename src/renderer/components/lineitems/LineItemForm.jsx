@@ -167,7 +167,11 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
   async function handleDelete() {
     if (!isEditing) return;
     try {
-      await window.api.deleteLineItem(lineItem.id);
+      if (lineItem.status === 'working') {
+        await window.api.updateLineItem(lineItem.id, { status: 'unbilled' });
+      } else {
+        await window.api.deleteLineItem(lineItem.id);
+      }
       onSaved();
       onClose();
     } catch (err) {
