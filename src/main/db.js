@@ -267,6 +267,8 @@ function runMigrations() {
       SELECT li.notes FROM line_items li WHERE li.id = estimate_line_items.line_item_id
     ) WHERE notes IS NULL AND line_item_id IS NOT NULL
   `).run();
+  // Mark all draft invoices as sent
+  db.prepare("UPDATE invoices SET status = 'sent' WHERE status = 'draft'").run();
 }
 
 function seedDefaults() {
@@ -749,6 +751,7 @@ function createInvoice(data, lineItemIds) {
   }
 
   saveSetting('invoice_next_number', String(parseInt(nextNum) + 1));
+  updateInvoiceStatus(invoiceId, 'sent');
   return invoiceId;
 }
 
