@@ -939,9 +939,15 @@ function getStatement(id) {
 }
 
 function createStatement(data) {
-  const nextNum = getSettingValue('statement_next_number') || '1';
+  let nextNum = parseInt(getSettingValue('statement_next_number') || '1') || 1;
   const prefix = getSettingValue('statement_prefix') || '';
-  const statementNumber = `${prefix}${nextNum}`;
+
+  // Find a free statement number (guard against UNIQUE collisions)
+  let statementNumber = `${prefix}${nextNum}`;
+  while (db.prepare('SELECT id FROM statements WHERE statement_number = ?').get(statementNumber)) {
+    nextNum += 1;
+    statementNumber = `${prefix}${nextNum}`;
+  }
 
   const result = db.prepare(`
     INSERT INTO statements (client_id, statement_number, statement_date, period_start, period_end, balance, notes)
@@ -951,7 +957,7 @@ function createStatement(data) {
     data.period_start, data.period_end, data.balance || 0, data.notes || null
   );
 
-  saveSetting('statement_next_number', String(parseInt(nextNum) + 1));
+  saveSetting('statement_next_number', String(nextNum + 1));
   return result.lastInsertRowid;
 }
 
