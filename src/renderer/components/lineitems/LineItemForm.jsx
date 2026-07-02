@@ -38,7 +38,28 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
   const [completedChecked, setCompletedChecked] = useState(false);
   const [startedDate, setStartedDate] = useState('');
   const [completedDate, setCompletedDate] = useState('');
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [allProjects, setAllProjects] = useState([]);
+  const [moveSearch, setMoveSearch] = useState('');
   const isEditing = Boolean(lineItem?.id);
+
+  function openMove() {
+    setMoveSearch('');
+    window.api.getAllProjectsGrouped().then((ps) => { setAllProjects(ps); setMoveOpen(true); }).catch(() => { setAllProjects([]); setMoveOpen(true); });
+  }
+
+  function moveClientName(p) {
+    return p.client_is_company ? p.client_company : [p.client_first, p.client_last].filter(Boolean).join(' ');
+  }
+
+  async function handleMove(targetProjectId) {
+    try {
+      await window.api.moveLineItem(lineItem.id, targetProjectId);
+      setMoveOpen(false);
+      onSaved();
+      onClose();
+    } catch (err) { console.error(err); alert('Failed to move line item: ' + (err?.message || err)); }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -490,13 +511,21 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
-          <div>
+          <div className="flex gap-2">
             {isEditing && (
               <button
                 onClick={handleDelete}
                 className="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
               >
                 Delete
+              </button>
+            )}
+            {isEditing && (
+              <button
+                onClick={openMove}
+                className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md border border-gray-200"
+              >
+                Move to Project…
               </button>
             )}
           </div>
@@ -516,6 +545,35 @@ export default function LineItemForm({ open, onClose, lineItem, projectId, curre
           </div>
         </div>
       </div>
+
+      {/* Move to Project picker */}
+      {moveOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]" onClick={() => setMoveOpen(false)}>
+          <div className="bg-white rounded-lg shadow-xl w-[440px] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-200">
+              <h2 className="text-base font-semibold text-gray-900">Move to Project</h2>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">{form.name || 'Line item'}</p>
+            </div>
+            <div className="px-5 py-3 border-b border-gray-100">
+              <input autoFocus value={moveSearch} onChange={(e) => setMoveSearch(e.target.value)} placeholder="Search projects or clients…" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+            </div>
+            <div className="flex-1 overflow-auto">
+              {allProjects.filter((p) => p.id !== projectId).filter((p) => {
+                const q = moveSearch.toLowerCase();
+                return !q || p.name.toLowerCase().includes(q) || (moveClientName(p) || '').toLowerCase().includes(q);
+              }).map((p) => (
+                <button key={p.id} onClick={() => handleMove(p.id)} className="w-full text-left px-5 py-2.5 border-b border-gray-50 hover:bg-brand-50">
+                  <div className="text-sm font-medium text-gray-800 truncate">{p.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{moveClientName(p)}</div>
+                </button>
+              ))}
+            </div>
+            <div className="px-5 py-3 border-t border-gray-200 flex justify-end">
+              <button onClick={() => setMoveOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

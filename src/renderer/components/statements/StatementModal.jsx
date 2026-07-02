@@ -64,8 +64,9 @@ export default function StatementModal({ open, onClose, client, onCreated }) {
   async function handleCreate() {
     if (creating) return;
     setCreating(true);
+    let stmtId;
     try {
-      const stmtId = await window.api.createStatement({
+      stmtId = await window.api.createStatement({
         client_id: client.id,
         statement_date: statementDate,
         period_start: periodStart,
@@ -73,24 +74,27 @@ export default function StatementModal({ open, onClose, client, onCreated }) {
         balance,
         notes: comments || null,
       });
-
-      try {
-        const result = await window.api.generatePdf('statement', stmtId);
-        if (result?.path) {
-          if (saveCopy && saveFolder) await window.api.savePdfAs(result.path, result.filename, saveFolder);
-          if (sendEmail) await window.api.sendEmail('statement', stmtId);
-          if (openPreview) await window.api.openPdf(result.path);
-        }
-      } catch (pdfErr) {
-        console.warn('PDF/delivery failed:', pdfErr);
-      }
-
-      onCreated();
-      onClose();
     } catch (err) {
       console.error('Create statement failed:', err);
+      alert('Failed to create statement: ' + (err?.message || err));
+      setCreating(false);
+      return;
     }
+
+    try {
+      const result = await window.api.generatePdf('statement', stmtId);
+      if (result?.path) {
+        if (saveCopy && saveFolder) await window.api.savePdfAs(result.path, result.filename, saveFolder);
+        if (sendEmail) await window.api.sendEmail('statement', stmtId);
+        if (openPreview) await window.api.openPdf(result.path);
+      }
+    } catch (pdfErr) {
+      console.warn('PDF/delivery failed:', pdfErr);
+    }
+
+    try { onCreated(); } catch (e) { console.error(e); }
     setCreating(false);
+    onClose();
   }
 
   async function handleChooseFolder() {

@@ -581,6 +581,35 @@ function archiveProject(id) {
   db.prepare("UPDATE projects SET status = 'archived', updated_at = datetime('now') WHERE id = ?").run(id);
 }
 
+function deleteProject(id) {
+  // Detach any invoices/estimates so financial records are preserved
+  db.prepare('UPDATE invoices SET project_id = NULL WHERE project_id = ?').run(id);
+  db.prepare('UPDATE estimates SET project_id = NULL WHERE project_id = ?').run(id);
+  // Delete the project's line items (clearing snapshot references first)
+  const lineItems = db.prepare('SELECT id FROM line_items WHERE project_id = ?').all(id);
+  for (const li of lineItems) {
+    db.prepare('UPDATE estimate_line_items SET line_item_id = NULL WHERE line_item_id = ?').run(li.id);
+    db.prepare('UPDATE invoice_line_items SET line_item_id = NULL WHERE line_item_id = ?').run(li.id);
+  }
+  db.prepare('DELETE FROM line_items WHERE project_id = ?').run(id);
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+}
+
+function getAllProjectsGrouped() {
+  return db.prepare(`
+    SELECT p.id, p.name, p.client_id,
+      cl.company as client_company, cl.first_name as client_first, cl.last_name as client_last, cl.is_company as client_is_company
+    FROM projects p
+    LEFT JOIN clients cl ON p.client_id = cl.id
+    WHERE p.status != 'archived' AND cl.archived = 0
+    ORDER BY cl.company, cl.last_name, cl.first_name, p.name
+  `).all();
+}
+
+function moveLineItem(id, projectId) {
+  db.prepare("UPDATE line_items SET project_id = ?, sort_order = 0 WHERE id = ?").run(projectId, id);
+}
+
 // ── Line Items ──
 
 function getLineItems(projectId) {
@@ -939,9 +968,15 @@ function getStatement(id) {
 }
 
 function createStatement(data) {
-  const nextNum = getSettingValue('statement_next_number') || '1';
+  let nextNum = parseInt(getSettingValue('statement_next_number') || '1') || 1;
   const prefix = getSettingValue('statement_prefix') || '';
-  const statementNumber = `${prefix}${nextNum}`;
+
+  // Find a free statement number (guard against UNIQUE collisions)
+  let statementNumber = `${prefix}${nextNum}`;
+  while (db.prepare('SELECT id FROM statements WHERE statement_number = ?').get(statementNumber)) {
+    nextNum += 1;
+    statementNumber = `${prefix}${nextNum}`;
+  }
 
   const result = db.prepare(`
     INSERT INTO statements (client_id, statement_number, statement_date, period_start, period_end, balance, notes)
@@ -951,7 +986,7 @@ function createStatement(data) {
     data.period_start, data.period_end, data.balance || 0, data.notes || null
   );
 
-  saveSetting('statement_next_number', String(parseInt(nextNum) + 1));
+  saveSetting('statement_next_number', String(nextNum + 1));
   return result.lastInsertRowid;
 }
 
@@ -1178,9 +1213,9 @@ module.exports = {
   // Clients
   getClients, getUnfiledClients, getClient, getClientSummary, createClient, updateClient, archiveClient, moveClientToGroup,
   // Projects
-  getProjects, getProject, createProject, updateProject, archiveProject,
+  getProjects, getProject, createProject, updateProject, archiveProject, deleteProject, getAllProjectsGrouped,
   // Line Items
-  getLineItems, getUnbilledLineItems, getWorkingLineItems, createLineItem, updateLineItem, deleteLineItem, duplicateLineItem, markLineItemsInvoiced, reorderLineItems,
+  getLineItems, getUnbilledLineItems, getWorkingLineItems, createLineItem, updateLineItem, deleteLineItem, duplicateLineItem, moveLineItem, markLineItemsInvoiced, reorderLineItems,
   // Categories
   getCategories, saveCategory, deleteCategory, reorderCategories,
   // Taxes
