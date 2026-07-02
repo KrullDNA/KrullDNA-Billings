@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('api', {
   createProject: (data) => ipcRenderer.invoke('createProject', data),
   updateProject: (id, data) => ipcRenderer.invoke('updateProject', id, data),
   archiveProject: (id) => ipcRenderer.invoke('archiveProject', id),
+  deleteProject: (id) => ipcRenderer.invoke('deleteProject', id),
+  getAllProjectsGrouped: () => ipcRenderer.invoke('getAllProjectsGrouped'),
 
   // Line Items
   getLineItems: (projectId) => ipcRenderer.invoke('getLineItems', projectId),
@@ -31,6 +33,7 @@ contextBridge.exposeInMainWorld('api', {
   createLineItem: (data) => ipcRenderer.invoke('createLineItem', data),
   updateLineItem: (id, data) => ipcRenderer.invoke('updateLineItem', id, data),
   deleteLineItem: (id) => ipcRenderer.invoke('deleteLineItem', id),
+  moveLineItem: (id, projectId) => ipcRenderer.invoke('moveLineItem', id, projectId),
   duplicateLineItem: (id, overrides) => ipcRenderer.invoke('duplicateLineItem', id, overrides),
   reorderLineItems: (orderedIds) => ipcRenderer.invoke('reorderLineItems', orderedIds),
   markLineItemsInvoiced: (ids) => ipcRenderer.invoke('markLineItemsInvoiced', ids),

@@ -133,6 +133,8 @@ function registerIpcHandlers() {
   ipcMain.handle('createProject', (_, data) => db.createProject(data));
   ipcMain.handle('updateProject', (_, id, data) => db.updateProject(id, data));
   ipcMain.handle('archiveProject', (_, id) => db.archiveProject(id));
+  ipcMain.handle('deleteProject', (_, id) => db.deleteProject(id));
+  ipcMain.handle('getAllProjectsGrouped', () => db.getAllProjectsGrouped());
 
   // Line Items
   ipcMain.handle('getLineItems', (_, projectId) => db.getLineItems(projectId));
@@ -142,6 +144,7 @@ function registerIpcHandlers() {
   ipcMain.handle('updateLineItem', (_, id, data) => db.updateLineItem(id, data));
   ipcMain.handle('deleteLineItem', (_, id) => db.deleteLineItem(id));
   ipcMain.handle('duplicateLineItem', (_, id, overrides) => db.duplicateLineItem(id, overrides));
+  ipcMain.handle('moveLineItem', (_, id, projectId) => db.moveLineItem(id, projectId));
   ipcMain.handle('reorderLineItems', (_, orderedIds) => db.reorderLineItems(orderedIds));
   ipcMain.handle('markLineItemsInvoiced', (_, ids) => db.markLineItemsInvoiced(ids));
 

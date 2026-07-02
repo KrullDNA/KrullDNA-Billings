@@ -166,6 +166,8 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
   const hasEstimateItems = unbilledItems.length > 0;
   const hasWorkingItems = workingItems.length > 0;
   const [lineItemContextMenu, setLineItemContextMenu] = useState(null);
+  const [projectContextMenu, setProjectContextMenu] = useState(null);
+  const [moveTarget, setMoveTarget] = useState(null); // line item being moved
 
   async function handleStartWorking(item) {
     try {
@@ -189,12 +191,28 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
     setLineItemContextMenu({ x: e.clientX, y: e.clientY, item });
   }
 
+  function handleProjectContextMenu(e, project) {
+    e.preventDefault();
+    e.stopPropagation();
+    setProjectContextMenu({ x: e.clientX, y: e.clientY, project });
+  }
+
+  async function handleDeleteProject(project) {
+    setProjectContextMenu(null);
+    if (!confirm(`Delete project "${project.name}"? This also removes its line items. Any invoices/estimates are kept but detached from the project.`)) return;
+    try {
+      await window.api.deleteProject(project.id);
+      if (selectedProject?.id === project.id) onSelectProject(null);
+      onRefresh();
+    } catch (err) { console.error(err); alert('Failed to delete project: ' + (err?.message || err)); }
+  }
+
   useEffect(() => {
-    if (!lineItemContextMenu) return;
-    const close = () => setLineItemContextMenu(null);
+    if (!lineItemContextMenu && !projectContextMenu) return;
+    const close = () => { setLineItemContextMenu(null); setProjectContextMenu(null); };
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
-  }, [lineItemContextMenu]);
+  }, [lineItemContextMenu, projectContextMenu]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -207,7 +225,7 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
           {projects.length === 0 ? (
             <div className="px-6 py-8 text-center text-sm text-gray-400">No projects yet. Click "New Project" to create one.</div>
           ) : projects.map((project) => (
-            <button key={project.id} onClick={() => onSelectProject(project)} onDoubleClick={() => onEditProject(project)}
+            <button key={project.id} onClick={() => onSelectProject(project)} onDoubleClick={() => onEditProject(project)} onContextMenu={(e) => handleProjectContextMenu(e, project)}
               className={`w-full grid grid-cols-[1fr_100px_80px_100px_100px] gap-2 px-6 py-2.5 text-sm text-left border-b border-gray-50 ${selectedProject?.id === project.id ? 'bg-brand-50 text-brand-900' : 'hover:bg-gray-50'}`}>
               <span className="truncate font-medium">{project.name}</span>
               <span className="text-right text-gray-500">{project.due_date ? new Date(project.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '\u2014'}</span>
@@ -256,12 +274,86 @@ function ProjectsTab({ projects, selectedProject, onSelectProject, lineItems, li
                 style={{ left: lineItemContextMenu.x, top: lineItemContextMenu.y }}
               >
                 <button onClick={() => handleDuplicateLineItem(lineItemContextMenu.item)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Duplicate Line Item</button>
+                <button onClick={() => { setMoveTarget(lineItemContextMenu.item); setLineItemContextMenu(null); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Move to Project…</button>
               </div>
             )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a project to view its line items</div>
         )}
+      </div>
+
+      {/* Project Context Menu */}
+      {projectContextMenu && (
+        <div
+          className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[160px]"
+          style={{ left: projectContextMenu.x, top: projectContextMenu.y }}
+        >
+          <button onClick={() => { onEditProject(projectContextMenu.project); setProjectContextMenu(null); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Edit Project</button>
+          <button onClick={() => handleDeleteProject(projectContextMenu.project)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Delete Project</button>
+        </div>
+      )}
+
+      {/* Move Line Item Picker */}
+      {moveTarget && (
+        <MoveLineItemModal
+          item={moveTarget}
+          currentProjectId={selectedProject?.id}
+          onClose={() => setMoveTarget(null)}
+          onMoved={() => { setMoveTarget(null); onRefresh(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function MoveLineItemModal({ item, currentProjectId, onClose, onMoved }) {
+  const [projects, setProjects] = useState([]);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    window.api.getAllProjectsGrouped().then(setProjects).catch(() => setProjects([]));
+  }, []);
+
+  function clientName(p) {
+    return p.client_is_company ? p.client_company : [p.client_first, p.client_last].filter(Boolean).join(' ');
+  }
+
+  const filtered = projects.filter((p) => p.id !== currentProjectId).filter((p) => {
+    const q = search.toLowerCase();
+    return !q || p.name.toLowerCase().includes(q) || (clientName(p) || '').toLowerCase().includes(q);
+  });
+
+  async function move(projectId) {
+    try {
+      await window.api.moveLineItem(item.id, projectId);
+      onMoved();
+    } catch (err) { console.error(err); alert('Failed to move line item: ' + (err?.message || err)); }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-[440px] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-gray-200">
+          <h2 className="text-base font-semibold text-gray-900">Move Line Item</h2>
+          <p className="text-xs text-gray-500 mt-0.5 truncate">{item.name}</p>
+        </div>
+        <div className="px-5 py-3 border-b border-gray-100">
+          <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search projects or clients…" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+        </div>
+        <div className="flex-1 overflow-auto">
+          {filtered.length === 0 ? (
+            <div className="px-5 py-6 text-center text-sm text-gray-400">No matching projects.</div>
+          ) : filtered.map((p) => (
+            <button key={p.id} onClick={() => move(p.id)} className="w-full text-left px-5 py-2.5 border-b border-gray-50 hover:bg-brand-50">
+              <div className="text-sm font-medium text-gray-800 truncate">{p.name}</div>
+              <div className="text-xs text-gray-500 truncate">{clientName(p)}</div>
+            </button>
+          ))}
+        </div>
+        <div className="px-5 py-3 border-t border-gray-200 flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+        </div>
       </div>
     </div>
   );
