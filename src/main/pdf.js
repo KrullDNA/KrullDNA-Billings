@@ -422,10 +422,12 @@ async function generateStatementPdf(stmtId) {
   const clientName = (client.is_company ? client.company : `${client.first_name} ${client.last_name}`).trim();
   const defaultPattern = '%clientName% Statement %stmtNum%';
   const pattern = settings.statement_filename_pattern || defaultPattern;
+  const stmtNum = stmt.statement_number || '';
   const filename = pattern
     .replace('%clientName%', clientName)
     .replace('%projectName%', '')
-    .replace('%stmtNum%', stmt.statement_number || '')
+    // A statement has one number — fill whichever number placeholder the pattern uses
+    .replace(/%stmtNum%|%estNum%|%invNum%/g, stmtNum)
     .replace(/[/\\:*?"<>|]/g, '')
     .replace(/\s+/g, ' ')
     .trim() + '.pdf';
