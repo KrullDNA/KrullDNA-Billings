@@ -269,6 +269,11 @@ function runMigrations() {
   `).run();
   // Mark all draft invoices as sent
   db.prepare("UPDATE invoices SET status = 'sent' WHERE status = 'draft'").run();
+  // Fix legacy statement filename pattern using wrong number placeholder
+  const stmtPattern = getSettingValue('statement_filename_pattern');
+  if (stmtPattern && /%estNum%|%invNum%/.test(stmtPattern)) {
+    saveSetting('statement_filename_pattern', stmtPattern.replace(/%estNum%|%invNum%/g, '%stmtNum%'));
+  }
 }
 
 function seedDefaults() {

@@ -52,7 +52,7 @@
     "mac": {
       "target": [
         {
-          "target": "dmg",
+          "target": "zip",
           "arch": ["universal"]
         }
       ],

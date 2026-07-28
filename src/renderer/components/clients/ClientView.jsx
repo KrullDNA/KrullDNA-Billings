@@ -464,6 +464,7 @@ function AccountTab({ client, currency, onRefresh }) {
   const [invoices, setInvoices] = useState([]);
   const [estimates, setEstimates] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [statements, setStatements] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null); // { type, data }
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState(null);
@@ -476,15 +477,17 @@ function AccountTab({ client, currency, onRefresh }) {
   const loadAccountData = useCallback(async () => {
     if (!client?.id) return;
     try {
-      const [inv, est, pay, stngs] = await Promise.all([
+      const [inv, est, pay, stmt, stngs] = await Promise.all([
         window.api.getInvoices(client.id),
         window.api.getEstimates(client.id),
         window.api.getPayments(client.id),
+        window.api.getStatements(client.id),
         window.api.getSettings(),
       ]);
       setInvoices(inv);
       setEstimates(est);
       setPayments(pay);
+      setStatements(stmt);
       setSettings(stngs);
     } catch (err) { console.error(err); }
   }, [client?.id]);
@@ -496,6 +499,7 @@ function AccountTab({ client, currency, onRefresh }) {
     ...invoices.map((i) => ({ type: 'invoice', data: i, date: i.invoice_date || i.created_at, number: i.invoice_number, amount: i.total, status: i.status })),
     ...estimates.map((e) => ({ type: 'estimate', data: e, date: e.estimate_date || e.created_at, number: e.estimate_number, amount: e.total, status: e.status })),
     ...payments.map((p) => ({ type: 'payment', data: p, date: p.payment_date || p.created_at, number: p.invoice_number ? `Payment for ${p.invoice_number}` : 'Payment', amount: p.amount, status: 'paid' })),
+    ...statements.map((s) => ({ type: 'statement', data: s, date: s.statement_date || s.created_at, number: `Statement ${s.statement_number}`, amount: s.balance, status: null })),
   ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const retainerBalance = client.retainer_balance || 0;
@@ -528,10 +532,10 @@ function AccountTab({ client, currency, onRefresh }) {
 
   async function handleDeleteDoc(tx) {
     setContextMenu(null);
-    const label = tx.type === 'invoice' ? `Invoice ${tx.number}` : `Estimate ${tx.number}`;
-    if (!confirm(`Delete ${label}?`)) return;
+    if (!confirm(`Delete ${tx.number}?`)) return;
     try {
       if (tx.type === 'invoice') await window.api.deleteInvoice(tx.data.id);
+      else if (tx.type === 'statement') await window.api.deleteStatement(tx.data.id);
       else await window.api.deleteEstimate(tx.data.id);
       if (selectedItem?.data.id === tx.data.id) setSelectedItem(null);
       await loadAccountData();
@@ -600,13 +604,14 @@ function AccountTab({ client, currency, onRefresh }) {
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                     tx.type === 'invoice' ? 'bg-blue-50 text-blue-600'
                     : tx.type === 'estimate' ? 'bg-purple-50 text-purple-600'
+                    : tx.type === 'statement' ? 'bg-amber-50 text-amber-600'
                     : 'bg-green-50 text-green-600'
                   }`}>
-                    {tx.type === 'invoice' ? 'INV' : tx.type === 'estimate' ? 'EST' : 'PAY'}
+                    {tx.type === 'invoice' ? 'INV' : tx.type === 'estimate' ? 'EST' : tx.type === 'statement' ? 'STMT' : 'PAY'}
                   </span>
                   <span className="font-medium truncate">{tx.number}</span>
                 </div>
-                {tx.status !== 'draft' && (
+                {tx.status && tx.status !== 'draft' && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(tx.status)}`}>
                     {tx.status?.toUpperCase()}
                   </span>
@@ -694,6 +699,12 @@ function AccountTab({ client, currency, onRefresh }) {
             <>
             <button onClick={() => { setContextMenu(null); handleShowReceipt(contextMenu.tx.data); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View Receipt</button>
             <button onClick={() => handleDeletePayment(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Delete Payment</button>
+            </>
+          )}
+          {contextMenu.tx.type === 'statement' && (
+            <>
+              <button onClick={() => handleRegeneratePdf(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Regenerate PDF</button>
+              <button onClick={() => handleDeleteDoc(contextMenu.tx)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Delete Statement</button>
             </>
           )}
         </div>
